@@ -1,50 +1,103 @@
 import React from "react";
 import {
-  FiBookOpen,
   FiChevronLeft,
   FiChevronRight,
   FiHome,
+  FiPackage,
+  FiGrid,
+  FiShoppingBag,
+  FiUsers,
+  FiFileText,
   FiMessageCircle,
-  FiSettings,
   FiUser,
+  FiSettings,
 } from "react-icons/fi";
-import { HiSparkles } from "react-icons/hi2";
 import { NavLink } from "react-router-dom";
 
 const TeacherSidebar = ({ isExpanded, setIsExpanded }) => {
   const menuItems = [
-    { name: "Dashboard", icon: <FiHome />, path: "/teacher/dashboard" },
-    { name: "Khóa học của tôi", icon: <FiBookOpen />, path: "/teacher/courses" },
-    // {
-    //   name: "Trợ lý AI",
-    //   icon: <HiSparkles />,
-    //   path: "/teacher/ai",
-    //   hasBadge: true,
-    //   badgeText: "AI",
-    // },
-    { name: "Hỏi đáp (Q&A)", icon: <FiMessageCircle />, path: "/teacher/qa" },
-    { name: "Hồ sơ", icon: <FiUser />, path: "/teacher/profile" },
-    { name: "Cài đặt", icon: <FiSettings />, path: "/teacher/settings" },
+    {
+      name: "Tổng quan",
+      icon: <FiHome />,
+      path: "/admin/dashboard",
+      fallbackPath: "/teacher/dashboard",
+    },
+    {
+      name: "Sản phẩm",
+      icon: <FiPackage />,
+      path: "/admin/products",
+      fallbackPath: "/teacher/products",
+    },
+    {
+      name: "Danh mục",
+      icon: <FiGrid />,
+      path: "/admin/categories",
+      fallbackPath: "/teacher/categories",
+    },
+    {
+      name: "Đơn hàng",
+      icon: <FiShoppingBag />,
+      path: "/admin/orders",
+      fallbackPath: "/teacher/courses",
+    },
+    {
+      name: "Khách hàng",
+      icon: <FiUsers />,
+      path: "/admin/customers",
+      fallbackPath: "/teacher/customers",
+    },
+    {
+      name: "Tin tức",
+      icon: <FiFileText />,
+      path: "/admin/news",
+      fallbackPath: "/teacher/news",
+    },
+    {
+      name: "Đánh giá",
+      icon: <FiMessageCircle />,
+      path: "/admin/reviews",
+      fallbackPath: "/teacher/reviews",
+    },
+    {
+      name: "Hồ sơ",
+      icon: <FiUser />,
+      path: "/admin/profile",
+      fallbackPath: "/teacher/profile",
+    },
+    {
+      name: "Cài đặt",
+      icon: <FiSettings />,
+      path: "/admin/settings",
+      fallbackPath: "/teacher/settings",
+    },
   ];
 
   return (
-    <div className="h-full flex flex-col p-4 text-white bg-[#021e4b]">
+    <div className="h-full min-h-screen flex flex-col p-4 text-white bg-[#021e4b]">
       <div className="mb-8 flex justify-end">
         <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          aria-label={isExpanded ? "Thu gọn menu" : "Mở rộng menu"}
         >
-          {isExpanded ? <FiChevronLeft size={20} /> : <FiChevronRight size={20} />}
+          {isExpanded ? (
+            <FiChevronLeft size={20} />
+          ) : (
+            <FiChevronRight size={20} />
+          )}
         </button>
       </div>
 
       <nav className="flex flex-col gap-2">
-        {menuItems.map((item, index) => (
+        {menuItems.map((item) => (
           <NavLink
-            key={index}
+            key={`${item.name}-${item.path}`}
             to={item.path}
+            end={item.path === "/admin/dashboard"}
             className={({ isActive }) => `
-              flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all
+              flex items-center gap-4 p-3 rounded-xl cursor-pointer
+              transition-all
               ${
                 isActive
                   ? "bg-[#0047AB] text-white shadow-lg shadow-blue-900/20"
@@ -52,20 +105,14 @@ const TeacherSidebar = ({ isExpanded, setIsExpanded }) => {
               }
             `}
           >
-            <div className="text-xl flex-none">{item.icon}</div>
+            <div className="text-xl flex-none">
+              {item.icon}
+            </div>
 
             {isExpanded && (
-              <div className="flex items-center flex-1 justify-between overflow-hidden">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  {item.name}
-                </span>
-
-                {item.hasBadge && (
-                  <span className="bg-blue-500 text-[10px] px-1.5 py-0.5 rounded text-white uppercase font-bold ml-2">
-                    {item.badgeText}
-                  </span>
-                )}
-              </div>
+              <span className="whitespace-nowrap text-sm font-medium overflow-hidden">
+                {item.name}
+              </span>
             )}
           </NavLink>
         ))}

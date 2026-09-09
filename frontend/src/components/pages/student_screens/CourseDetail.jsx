@@ -1,849 +1,1419 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FiArrowLeft,
   FiCheckCircle,
-  FiChevronDown,
-  FiClock,
   FiCreditCard,
-  FiLock,
-  FiMonitor,
-  FiPlayCircle,
-  FiSmartphone,
+  FiMail,
+  FiPackage,
+  FiPhone,
   FiStar,
-  FiUser,
-  FiX,
-  FiEdit2,
   FiTrash2,
-  FiPlus,
+  FiUser,
+  FiTruck,
+  FiMapPin,
+  FiX,
 } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
+
 import { courseService } from "../../../services/courseService";
 import { paymentService } from "../../../services/paymentService";
 import { reviewService } from "../../../services/reviewService";
-import { getCurrentUser } from "../../../untils/auth";
 import { enrollmentService } from "../../../services/enrollmentService";
-import { lessonService } from "../../../services/lessonService";
-import apiClient from "../../../untils/auth";
+import { getCurrentUser } from "../../../untils/auth";
 
 const formatPrice = (price) => {
-  if (!price || Number(price) === 0) return "Miễn phí";
-  return `${Number(price).toLocaleString("vi-VN")}VNĐ`;
+  const value = Number(price || 0);
+
+  if (value <= 0) {
+    return "Liên hệ báo giá";
+  }
+
+  return `${value.toLocaleString("vi-VN")} VNĐ`;
 };
 
 const CourseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [course, setCourse] = useState(null);
+  const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [openChapters, setOpenChapters] = useState({});
-  const [isEnrolled, setIsEnrolled] = useState(false);
-  const [checkingEnrollment, setCheckingEnrollment] = useState(true);
+
+  const [quantity, setQuantity] = useState(1);
+  const [isPurchased, setIsPurchased] = useState(false);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("momo");
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const [paymentMethod, setPaymentMethod] = useState("cod");
 
   const [paymentForm, setPaymentForm] = useState({
     fullName: "",
     phone: "",
     email: "",
+    address: "",
     note: "",
   });
 
-  const [reviewForm, setReviewForm] = useState({
-    rating: 5,
-    comment: "",
+  const [notification, setNotification] = useState({
+    show: false,
+    type: "success",
+    message: "",
   });
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteReviewId, setDeleteReviewId] = useState(null);
+
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({
     average: 0,
     total: 0,
   });
 
-// Role-based UI
-  const currentUser = getCurrentUser();
-  const isTeacher = currentUser?.role === "teacher" || currentUser?.role === "admin";
-
-  // Teacher accordion state - track which lesson is expanded
-  const [openLessonId, setOpenLessonId] = useState(null);
-
-  // Lesson management states
-  const [showAddLesson, setShowAddLesson] = useState(false);
-  const [newLesson, setNewLesson] = useState({
-    title: "",
-    description: "",
-    content: "",
-    video_url: ""
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: "",
   });
-  const [editingLessonId, setEditingLessonId] = useState(null);
-  const [editLesson, setEditLesson] = useState({});
 
-  const refreshReviewData = (courseId) => {
-    const courseReviews = reviewService.getCourseReviews(courseId);
-    const stats = reviewService.getCourseReviewStats(courseId);
-    const myReview = reviewService.getMyReview(courseId);
+  const [editingReviewId, setEditingReviewId] = useState(null);
 
-    setReviews(courseReviews);
-    setReviewStats(stats);
+  const currentUser = getCurrentUser();
 
-    if (myReview) {
-      setReviewForm({
-        rating: myReview.rating,
-        comment: myReview.comment || "",
+  const showNotification = (message, type = "success") => {
+    setNotification({
+      show: true,
+      type,
+      message,
+    });
+
+    window.clearTimeout(
+      window.__asiappNotificationTimer
+    );
+
+    window.__asiappNotificationTimer =
+      window.setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "success",
+          message: "",
+        });
+      }, 4000);
+  };
+
+  const closeNotification = () => {
+    window.clearTimeout(
+      window.__asiappNotificationTimer
+    );
+
+    setNotification({
+      show: false,
+      type: "success",
+      message: "",
+    });
+  };
+
+  const loadReviewData = async (productId) => {
+    try {
+      const result =
+        await reviewService.getCourseReviews(
+          productId
+        );
+
+      const reviewList = Array.isArray(result)
+        ? result
+        : result?.items ||
+          result?.data ||
+          [];
+
+      setReviews(reviewList);
+
+      if (reviewList.length > 0) {
+        const total = reviewList.length;
+
+        const average =
+          reviewList.reduce(
+            (sum, item) =>
+              sum + Number(item.rating || 0),
+            0
+          ) / total;
+
+        setReviewStats({
+          average: Number(
+            average.toFixed(1)
+          ),
+          total,
+        });
+      } else {
+        setReviewStats({
+          average: 0,
+          total: 0,
+        });
+      }
+
+      try {
+        const myReview =
+          await reviewService.getMyReview(
+            productId
+          );
+
+        if (myReview) {
+          setReviewForm({
+            rating: Number(
+              myReview.rating || 5
+            ),
+            comment:
+              myReview.comment || "",
+          });
+
+          setEditingReviewId(
+            myReview.id ||
+              myReview.review_id
+          );
+        }
+      } catch (error) {
+        console.warn(
+          "Không lấy được đánh giá của khách hàng:",
+          error
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Load review error:",
+        error
+      );
+
+      setReviews([]);
+
+      setReviewStats({
+        average: 0,
+        total: 0,
       });
     }
   };
 
   useEffect(() => {
-    const fetchCourse = async () => {
+    const fetchProduct = async () => {
       try {
-        const data = await courseService.getCourseById(id);
-        setCourse(data);
-        const enrolled = await enrollmentService.checkEnrollment(id);
-        setIsEnrolled(enrolled);
+        setLoading(true);
 
-        const initialState = {};
-        data.chapters?.forEach((chapter, index) => {
-          initialState[chapter.id] = index === 0;
-        });
-        setOpenChapters(initialState);
+        const data =
+          await courseService.getProductById(
+            id
+          );
 
-        refreshReviewData(data.id);
+        if (!data) {
+          setProduct(null);
+          return;
+        }
+
+        setProduct(data);
+
+        const minQuantity = Number(
+          data.min_order_quantity || 1
+        );
+
+        setQuantity(minQuantity);
+
+        try {
+          const purchased =
+            await enrollmentService.checkEnrollment(
+              id
+            );
+
+          setIsPurchased(
+            Boolean(purchased)
+          );
+        } catch (error) {
+          console.warn(
+            "Không kiểm tra được trạng thái mua:",
+            error
+          );
+
+          setIsPurchased(false);
+        }
+
+        const productId =
+          data.id ||
+          data.product_id ||
+          data.course_id ||
+          id;
+
+        await loadReviewData(
+          productId
+        );
+
+        if (currentUser) {
+          setPaymentForm((prev) => ({
+            ...prev,
+            fullName:
+              currentUser.name || "",
+            email:
+              currentUser.email || "",
+            phone:
+              currentUser.phone || "",
+            address:
+              currentUser.address || "",
+          }));
+        }
       } catch (error) {
-        console.error(error);
+        console.error(
+          "Fetch product error:",
+          error
+        );
+
+        setProduct(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCourse();
+    if (id) {
+      fetchProduct();
+    }
   }, [id]);
 
-  useEffect(() => {
-    const currentUser = getCurrentUser();
-    setPaymentForm((prev) => ({
-      ...prev,
-      fullName: currentUser?.name || "",
-      email: currentUser?.email || "",
-    }));
-  }, []);
+  const productId =
+    product?.id ||
+    product?.product_id ||
+    product?.course_id ||
+    id;
 
-  const isFreeCourse = useMemo(() => Number(course?.price || 0) === 0, [course]);
+  const minQuantity = Number(
+    product?.min_order_quantity || 1
+  );
 
-  const toggleChapter = (chapterId) => {
-    setOpenChapters((prev) => ({
-      ...prev,
-      [chapterId]: !prev[chapterId],
-    }));
-  };
+  const unit =
+    product?.unit || "cái";
 
-  const handleRequireAuth = (type = "login", message = "") => {
+  const hasFixedPrice =
+    Number(product?.price || 0) > 0;
+
+  const totalPrice = hasFixedPrice
+    ? Number(product.price || 0) *
+      Number(
+        quantity || minQuantity
+      )
+    : 0;
+
+  const handleRequireAuth = (
+    message
+  ) => {
     window.dispatchEvent(
-      new CustomEvent("openAuthModal", {
-        detail: { type, message },
-      })
+      new CustomEvent(
+        "openAuthModal",
+        {
+          detail: {
+            type: "login",
+            message,
+          },
+        }
+      )
     );
   };
 
-// Thêm async vào đây 
-  const enrollFreeCourse = async () => {
-    try {
-      await enrollmentService.enrollCourse(course.id);
-
-      setIsEnrolled(true);
-      alert("Đăng ký khóa học thành công!");
-      // Redirect to learning page after successful enrollment
-      navigate(`/learn/${course.id}`);
-    } catch (error) {
-      console.error(error);
-      alert("Có lỗi xảy ra khi đăng ký khóa học.");
-    }
+  const increaseQuantity = () => {
+    setQuantity(
+      (prev) => Number(prev) + 1
+    );
   };
 
+  const decreaseQuantity = () => {
+    setQuantity((prev) =>
+      Math.max(
+        minQuantity,
+        Number(prev) - 1
+      )
+    );
+  };
 
-  const handleEnrollCourse = () => {
-    const currentUser = getCurrentUser();
+  const handleQuantityChange = (
+    event
+  ) => {
+    const value = Number(
+      event.target.value
+    );
 
+    if (!Number.isFinite(value)) {
+      setQuantity(minQuantity);
+      return;
+    }
+
+    if (value < minQuantity) {
+      setQuantity(minQuantity);
+      return;
+    }
+
+    setQuantity(Math.floor(value));
+  };
+
+  const handleBuyNow = () => {
     if (!currentUser) {
-      handleRequireAuth("login", "Bạn cần đăng nhập để đăng ký khóa học này.");
+      handleRequireAuth(
+        "Bạn cần đăng nhập để đặt mua sản phẩm."
+      );
+
       return;
     }
 
-    if (isEnrolled) {
-      navigate(`/learn/${course.id}`);
+    if (isPurchased) {
       return;
     }
 
-    if (isFreeCourse) {
-      enrollFreeCourse();
+    if (!hasFixedPrice) {
+      window.location.href =
+        "tel:02873008899";
+
       return;
     }
 
+    setPaymentMethod("cod");
     setShowPaymentModal(true);
   };
 
-  const handleConfirmPayment = async () => {
-    if (!paymentForm.fullName.trim() || !paymentForm.phone.trim() || !paymentForm.email.trim()) {
-      alert("Vui lòng nhập đầy đủ thông tin.");
-      return;
-    }
+  const handleConfirmPayment =
+    async () => {
+      if (!paymentForm.fullName.trim()) {
+        showNotification(
+          "Vui lòng nhập họ và tên.",
+          "error"
+        );
+        return;
+      }
 
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      alert("Bạn cần đăng nhập");
-      return;
-    }
+      if (!paymentForm.phone.trim()) {
+        showNotification(
+          "Vui lòng nhập số điện thoại.",
+          "error"
+        );
+        return;
+      }
 
-    setIsProcessingPayment(true);
+      if (!paymentForm.email.trim()) {
+        showNotification(
+          "Vui lòng nhập email.",
+          "error"
+        );
+        return;
+      }
 
-    try {
-      console.log("Creating payment...");
+      if (!paymentForm.address.trim()) {
+        showNotification(
+          "Vui lòng nhập địa chỉ giao hàng.",
+          "error"
+        );
+        return;
+      }
 
-      const res = await apiClient.post(
-        "/payment/checkout",
-        {
-          user_id: currentUser.id,
-          course_id: course.id,
-          amount: course.price,
+      if (
+        Number(quantity) <
+        minQuantity
+      ) {
+        showNotification(
+          `Số lượng tối thiểu là ${minQuantity.toLocaleString(
+            "vi-VN"
+          )} ${unit}.`,
+          "error"
+        );
+
+        return;
+      }
+
+      if (!currentUser) {
+        handleRequireAuth(
+          "Bạn cần đăng nhập để thanh toán."
+        );
+
+        return;
+      }
+
+      setIsProcessingPayment(true);
+
+      try {
+        const payload = {
+          productId,
+          quantity: Number(
+            quantity
+          ),
+
+          customerName:
+            paymentForm.fullName.trim(),
+
+          customerPhone:
+            paymentForm.phone.trim(),
+
+          customerEmail:
+            paymentForm.email.trim(),
+
+          customerAddress:
+            paymentForm.address.trim(),
+
+          note:
+            paymentForm.note.trim(),
+
+          paymentMethod,
+        };
+
+        if (
+          paymentMethod ===
+          "vnpay"
+        ) {
+          await paymentService.createPayment(
+            payload
+          );
+
+          return;
         }
-      );
 
-      const paymentUrl = res.data.payment_url;
+        const response =
+          await paymentService.createCodOrder(
+            payload
+          );
 
-      console.log("Redirect to:", paymentUrl);
+        if (
+          response?.success === false
+        ) {
+          throw new Error(
+            response?.message ||
+              "Không thể tạo đơn hàng."
+          );
+        }
 
-      window.location.href = paymentUrl;
+        setShowPaymentModal(false);
+        setIsProcessingPayment(false);
 
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Không thể tạo thanh toán");
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
+        showNotification(
+          "Đặt hàng thành công. Nhân viên ASIAPP sẽ liên hệ với bạn để xác nhận đơn hàng.",
+          "success"
+        );
 
+        navigate(
+          `/payment-success?course_id=${productId}&method=cod`
+        );
+      } catch (error) {
+        console.error(
+          "Create order/payment error:",
+          error
+        );
 
-  const handleLearnNow = () => {
-    const currentUser = getCurrentUser();
+        const message =
+          error?.response?.data
+            ?.message ||
+          error?.message ||
+          "Không thể tạo đơn hàng. Vui lòng thử lại.";
 
-    if (!currentUser) {
-      handleRequireAuth("login", "Bạn cần đăng nhập để học khóa học này.");
-      return;
-    }
+        showNotification(
+          message,
+          "error"
+        );
 
-    if (!isEnrolled) {
-      if (isFreeCourse) {
-        enrollFreeCourse();
-        navigate(`/learn/${course.id}`);
-      } else {
-        setShowPaymentModal(true);
+        setIsProcessingPayment(
+          false
+        );
       }
-      return;
-    }
+    };
 
-    navigate(`/learn/${course.id}`);
-  };
+  const handleSubmitReview =
+    async () => {
+      if (!currentUser) {
+        handleRequireAuth(
+          "Bạn cần đăng nhập để đánh giá sản phẩm."
+        );
 
-const handleSubmitReview = () => {
-    const currentUser = getCurrentUser();
-
-    if (!currentUser) {
-      handleRequireAuth("login", "Bạn cần đăng nhập để đánh giá khóa học.");
-      return;
-    }
-
-    if (!isEnrolled) {
-      alert("Bạn cần đăng ký khóa học trước khi đánh giá.");
-      return;
-    }
-
-    try {
-      reviewService.addOrUpdateReview(course.id, reviewForm);
-      refreshReviewData(course.id);
-      alert("Đã lưu đánh giá của bạn!");
-    } catch (error) {
-      console.error(error);
-      alert("Không thể gửi đánh giá.");
-    }
-  };
-
-  // ====== LESSON MANAGEMENT HANDLERS ======
-  const handleAddLesson = async () => {
-    if (!newLesson.title.trim()) {
-      alert("Vui lòng nhập tên bài học");
-      return;
-    }
-    try {
-      const created = await lessonService.createLesson({
-        course_id: parseInt(id),
-        ...newLesson
-      });
-      if (created) {
-        alert("Thêm bài học thành công!");
-        setShowAddLesson(false);
-        setNewLesson({ title: "", description: "", content: "", video_url: "" });
-        // Refresh course data
-        window.location.reload();
+        return;
       }
-    } catch (err) {
-      console.error("Add lesson error:", err);
-      alert("Lỗi khi thêm bài học");
-    }
-  };
 
-  const handleUpdateLesson = async (lessonId) => {
-    try {
-      const updated = await lessonService.updateLesson(lessonId, editLesson);
-      if (updated) {
-        alert("Cập nhật bài học thành công!");
-        setEditingLessonId(null);
-        setEditLesson({});
-        window.location.reload();
+      if (!isPurchased) {
+        showNotification(
+          "Bạn cần mua sản phẩm trước khi đánh giá.",
+          "error"
+        );
+
+        return;
       }
-    } catch (err) {
-      console.error("Update lesson error:", err);
-      alert("Lỗi khi cập nhật bài học");
-    }
-  };
 
-  const handleDeleteLesson = async (lessonId) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa bài học này?")) return;
-    try {
-      const success = await lessonService.deleteLesson(lessonId);
-      if (success) {
-        alert("Xóa bài học thành công!");
-        window.location.reload();
+      if (
+        !reviewForm.comment.trim()
+      ) {
+        showNotification(
+          "Vui lòng nhập nội dung đánh giá.",
+          "error"
+        );
+
+        return;
       }
-    } catch (err) {
-      console.error("Delete lesson error:", err);
-      alert("Lỗi khi xóa bài học");
-    }
+
+      try {
+        await reviewService.addOrUpdateReview(
+          productId,
+          {
+            rating: Number(
+              reviewForm.rating
+            ),
+            comment:
+              reviewForm.comment.trim(),
+          }
+        );
+
+        showNotification(
+          "Đã lưu đánh giá.",
+          "success"
+        );
+
+        setEditingReviewId(null);
+
+        await loadReviewData(
+          productId
+        );
+      } catch (error) {
+        console.error(
+          "Submit review error:",
+          error
+        );
+
+        const message =
+          error?.response?.data
+            ?.message ||
+          error?.message ||
+          "Không thể gửi đánh giá.";
+
+        showNotification(
+          message,
+          "error"
+        );
+      }
+    };
+
+  const requestDeleteReview = (
+    reviewId
+  ) => {
+    if (!reviewId) return;
+
+    setDeleteReviewId(
+      reviewId
+    );
+
+    setShowDeleteConfirm(
+      true
+    );
   };
 
-  const startEditLesson = (lesson) => {
-    setEditingLessonId(lesson.lesson_id);
-    setEditLesson({
-      title: lesson.title || "",
-      description: lesson.description || "",
-      content: lesson.content || "",
-      video_url: lesson.video_url || ""
-    });
-  };
+  const handleDeleteReview =
+    async () => {
+      if (!deleteReviewId) {
+        return;
+      }
 
-const cancelEdit = () => {
-    setEditingLessonId(null);
-    setEditLesson({});
-  };
+      try {
+        await reviewService.deleteReview(
+          deleteReviewId
+        );
 
-  // ====== TEACHER ACCORDION - Toggle lesson expand/collapse ======
-  const toggleLesson = (lessonId, e) => {
-    e?.stopPropagation(); // Prevent parent click
-    setOpenLessonId(openLessonId === lessonId ? null : lessonId);
-  };
+        setShowDeleteConfirm(
+          false
+        );
 
-  // Student clicks → navigate to learn page
-  const handleLessonClick = (lessonId, e) => {
-    e?.stopPropagation(); // Prevent teacher accordion toggle
-    if (!isEnrolled) {
-      alert("Bạn cần đăng ký khóa học để xem bài học");
-      return;
-    }
-    navigate(`/learn/${course.id}?lesson=${lessonId}`);
-  };
+        setDeleteReviewId(null);
+
+        showNotification(
+          "Đã xóa đánh giá.",
+          "success"
+        );
+
+        setReviewForm({
+          rating: 5,
+          comment: "",
+        });
+
+        setEditingReviewId(null);
+
+        await loadReviewData(
+          productId
+        );
+      } catch (error) {
+        console.error(
+          "Delete review error:",
+          error
+        );
+
+        setShowDeleteConfirm(
+          false
+        );
+
+        setDeleteReviewId(null);
+
+        showNotification(
+          "Không thể xóa đánh giá.",
+          "error"
+        );
+      }
+    };
 
   if (loading) {
     return (
-      <div className="bg-white rounded-[28px] border border-gray-100 p-8">
-        Đang tải chi tiết khóa học...
+      <div className="bg-white rounded-[28px] border border-gray-100 p-10 text-center">
+        <div className="text-slate-500">
+          Đang tải thông tin sản phẩm...
+        </div>
       </div>
     );
   }
 
-  if (!course) {
+  if (!product) {
     return (
-      <div className="bg-white rounded-[28px] border border-gray-100 p-8">
-        Không tìm thấy khóa học.
+      <div className="bg-white rounded-[28px] border border-gray-100 p-10 text-center">
+        <h2 className="text-2xl font-bold text-slate-800 mb-3">
+          Không tìm thấy sản phẩm
+        </h2>
+
+        <p className="text-slate-500 mb-6">
+          Sản phẩm có thể đã bị xóa hoặc ngừng
+          hiển thị.
+        </p>
+
+        <button
+          onClick={() =>
+            navigate(
+              "/all-courses"
+            )
+          }
+          className="px-5 py-3 rounded-xl bg-[#002B5B] text-white font-semibold"
+        >
+          Xem danh mục sản phẩm
+        </button>
       </div>
     );
   }
 
-  // useEffect(() => {
-  //   const fetchCourse = async () => {
-  //     try {
-  //       setLoading(true);
-  //       setCheckingEnrollment(true);
+  const image =
+    product.image ||
+    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80";
 
-  //       const data = await courseService.getCourseById(id);
-  //       setCourse(data);
+  const categoryName =
+    product.category_name ||
+    product.category ||
+    "Bao bì nhựa";
 
-  //       // ✅ GỌI API thật qua service
-  //       const enrolled = await enrollmentService.checkEnrollment(id);
-  //       setIsEnrolled(enrolled);
+  const productName =
+    product.name ||
+    product.title ||
+    "Sản phẩm bao bì";
 
-  //       // UI chapters
-  //       const initialState = {};
-  //       data.chapters?.forEach((chapter, index) => {
-  //         initialState[chapter.id] = index === 0;
-  //       });
-  //       setOpenChapters(initialState);
+  const productDescription =
+    product.description ||
+    "Sản phẩm bao bì nhựa được sản xuất phục vụ nhu cầu đóng gói và bảo quản hàng hóa.";
 
-  //       refreshReviewData(data.id);
-
-  //     } catch (error) {
-  //       console.error("fetchCourse ERROR:", error);
-  //     } finally {
-  //       setLoading(false);
-  //       setCheckingEnrollment(false);
-  //     }
-  //   };
-
-  //   if (id) fetchCourse();
-  // }, [id]);
-
-
+  const specifications = [
+    ["Chất liệu", product.material],
+    ["Độ dày", product.thickness],
+    ["Chiều rộng", product.width],
+    ["Chiều cao", product.height],
+    ["Chiều dài", product.length],
+    ["Màu sắc", product.color],
+    ["In ấn", product.printing],
+    ["Đơn vị", unit],
+  ].filter(
+    ([, value]) => value
+  );
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex justify-start">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-slate-700 font-medium hover:bg-gray-50 transition"
+      {notification.show && (
+        <div className="fixed top-6 right-6 z-[100] w-[min(420px,calc(100vw-32px))]">
+          <div
+            className={`rounded-2xl border shadow-xl bg-white px-5 py-4 flex items-start gap-3 ${
+              notification.type ===
+              "error"
+                ? "border-red-200"
+                : "border-emerald-200"
+            }`}
           >
-            <FiArrowLeft />
-            Quay lại
-          </button>
-        </div>
+            <div
+              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                notification.type ===
+                "error"
+                  ? "bg-red-50 text-red-600"
+                  : "bg-emerald-50 text-emerald-600"
+              }`}
+            >
+              {notification.type ===
+              "error" ? (
+                <FiX size={18} />
+              ) : (
+                <FiCheckCircle
+                  size={18}
+                />
+              )}
+            </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_0.8fr] gap-8 items-start">
-          <div className="space-y-8">
-            <div className="bg-white rounded-[28px] border border-gray-100 p-8 shadow-sm">
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase">
-                  {course.category}
-                </span>
-                <span className="flex items-center gap-1 text-sm text-orange-500 font-semibold">
-                  <FiStar fill="currentColor" />
-                  {reviewStats.total > 0 ? reviewStats.average : course.rating}
-                </span>
-                <span className="text-sm text-slate-500">
-                  ({reviewStats.total} đánh giá)
-                </span>
+            <div className="flex-1">
+              <div className="font-semibold text-slate-800">
+                {notification.type ===
+                "error"
+                  ? "Có lỗi xảy ra"
+                  : "Thông báo"}
               </div>
 
-              <h1 className="text-4xl font-bold text-[#0F172A] leading-tight mb-4">
-                {course.title}
-              </h1>
-
-              <p className="text-slate-600 text-[17px] leading-8 mb-8">
-                {course.description}
+              <p className="text-sm text-slate-600 mt-1 leading-6">
+                {
+                  notification.message
+                }
               </p>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {course.outcomes?.map((item, index) => (
-                  <div key={index} className="flex gap-3">
-                    <span className="mt-1 text-blue-600 font-bold">✓</span>
-                    <p className="text-slate-700 leading-7">{item}</p>
+            <button
+              type="button"
+              onClick={
+                closeNotification
+              }
+              className="text-slate-400 hover:text-slate-700"
+            >
+              <FiX size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-6">
+        <button
+          onClick={() =>
+            navigate(-1)
+          }
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-slate-700 font-medium hover:bg-gray-50 transition"
+        >
+          <FiArrowLeft />
+          Quay lại
+        </button>
+
+        <div className="grid grid-cols-1 xl:grid-cols-[1.35fr_0.65fr] gap-8 items-start">
+          <div className="space-y-6">
+            <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-2">
+                <div className="bg-slate-100 min-h-105">
+                  <img
+                    src={image}
+                    alt={productName}
+                    className="w-full h-full min-h-105 object-cover"
+                  />
+                </div>
+
+                <div className="p-8 lg:p-10">
+                  <div className="flex flex-wrap items-center gap-3 mb-5">
+                    <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase">
+                      {categoryName}
+                    </span>
+
+                    {product.material && (
+                      <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                        {
+                          product.material
+                        }
+                      </span>
+                    )}
                   </div>
-                ))}
+
+                  <h1 className="text-3xl lg:text-4xl font-bold text-[#0F172A] leading-tight mb-5">
+                    {productName}
+                  </h1>
+
+                  <p className="text-slate-600 leading-8 mb-7">
+                    {
+                      productDescription
+                    }
+                  </p>
+
+                  <div className="flex items-center gap-2 mb-7">
+                    <div className="flex items-center gap-1 text-orange-500">
+                      {[
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                      ].map(
+                        (star) => (
+                          <FiStar
+                            key={star}
+                            size={18}
+                            fill={
+                              star <=
+                              Math.round(
+                                Number(
+                                  reviewStats.average ||
+                                    product.rating ||
+                                    0
+                                )
+                              )
+                                ? "currentColor"
+                                : "none"
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+
+                    <span className="font-semibold text-slate-700">
+                      {reviewStats.total >
+                      0
+                        ? reviewStats.average.toFixed(
+                            1
+                          )
+                        : Number(
+                            product.rating ||
+                              0
+                          ).toFixed(
+                            1
+                          )}
+                    </span>
+
+                    <span className="text-slate-400">
+                      (
+                      {
+                        reviewStats.total
+                      }{" "}
+                      đánh giá)
+                    </span>
+                  </div>
+
+                  {product.usage && (
+                    <div className="rounded-2xl bg-slate-50 border border-gray-100 p-5">
+                      <div className="font-bold text-slate-800 mb-2">
+                        Ứng dụng
+                      </div>
+
+                      <p className="text-slate-600 leading-7">
+                        {
+                          product.usage
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-[28px] border border-gray-100 p-8 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
+            <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                  <FiPackage
+                    size={21}
+                  />
+                </div>
+
                 <div>
-                  <h2 className="text-3xl font-bold text-[#0F172A] mb-2">
-                    Nội dung khóa học
+                  <h2 className="text-2xl font-bold text-slate-800">
+                    Thông số sản phẩm
                   </h2>
-                  <p className="text-slate-600">
-                    {course.totalChapters} chương • {course.totalLessons} bài học •
-                    Thời lượng {course.totalDuration}
+
+                  <p className="text-sm text-slate-500">
+                    Thông tin kỹ thuật của sản phẩm
+                  </p>
+                </div>
+              </div>
+
+              {specifications.length >
+              0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 border border-gray-100 rounded-2xl overflow-hidden">
+                  {specifications.map(
+                    (
+                      [
+                        label,
+                        value,
+                      ],
+                      index
+                    ) => (
+                      <div
+                        key={label}
+                        className={`flex items-center justify-between gap-5 px-5 py-4 ${
+                          index %
+                            2 ===
+                          0
+                            ? "bg-slate-50"
+                            : "bg-white"
+                        } border-b border-gray-100`}
+                      >
+                        <span className="text-slate-500">
+                          {label}
+                        </span>
+
+                        <span className="font-semibold text-slate-800 text-right">
+                          {value}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-slate-50 p-6 text-slate-500">
+                  Sản phẩm chưa có thông số kỹ thuật
+                  chi tiết.
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                  <FiCheckCircle
+                    size={21}
+                  />
+                </div>
+
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-800">
+                    Chính sách đặt hàng
+                  </h2>
+
+                  <p className="text-sm text-slate-500">
+                    Thông tin dành cho khách hàng doanh nghiệp
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-slate-50 p-5">
+                  <div className="font-bold text-slate-800 mb-2">
+                    Số lượng tối thiểu
+                  </div>
+
+                  <div className="text-slate-600">
+                    {minQuantity.toLocaleString(
+                      "vi-VN"
+                    )}{" "}
+                    {unit}
+                  </div>
+
+                  <p className="text-xs text-slate-400 mt-2">
+                    MOQ được áp dụng riêng theo từng
+                    sản phẩm.
                   </p>
                 </div>
 
-                <button
-                  onClick={() => {
-                    const expanded = {};
-                    course.chapters?.forEach((chapter) => {
-                      expanded[chapter.id] = true;
-                    });
-                    setOpenChapters(expanded);
-                  }}
-                  className="text-blue-700 font-semibold hover:underline text-left md:text-right"
-                >
-                  Mở rộng tất cả
-                </button>
-              </div>
-
-<div className="space-y-4">
-                {/* Teacher: Add Lesson Button */}
-                {isTeacher && (
-                  <button
-                    onClick={() => setShowAddLesson(true)}
-                    className="flex items-center gap-2 px-4 py-3 bg-[#0B5CFF] text-white rounded-xl font-semibold hover:bg-blue-700 transition mb-4"
-                  >
-                    <FiPlus />
-                    Thêm bài học
-                  </button>
-                )}
-
-                {/* Add Lesson Form */}
-                {showAddLesson && (
-                  <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-gray-200">
-                    <h4 className="font-bold text-slate-800 mb-3">Thêm bài học mới</h4>
-                    <input
-                      type="text"
-                      placeholder="Tên bài học"
-                      value={newLesson.title}
-                      onChange={(e) => setNewLesson({...newLesson, title: e.target.value})}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2 mb-2"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Video URL (tùy chọn)"
-                      value={newLesson.video_url}
-                      onChange={(e) => setNewLesson({...newLesson, video_url: e.target.value})}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2 mb-2"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleAddLesson}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium"
-                      >
-                        Lưu
-                      </button>
-                      <button
-                        onClick={() => setShowAddLesson(false)}
-                        className="px-4 py-2 border border-gray-200 text-slate-700 rounded-lg"
-                      >
-                        Hủy
-                      </button>
-                    </div>
+                <div className="rounded-2xl bg-slate-50 p-5">
+                  <div className="font-bold text-slate-800 mb-2">
+                    Báo giá
                   </div>
-                )}
 
-                {(!course.chapters || course.chapters.length === 0) ? (
-                  <div className="text-center py-8 text-slate-500 bg-gray-50 rounded-xl">
-                    <p>Chưa có bài học nào</p>
-                    {isTeacher && <p className="text-sm">Nhấn "Thêm bài học" để tạo bài học đầu tiên</p>}
+                  <div className="text-slate-600">
+                    Theo quy cách và số lượng đặt hàng
                   </div>
-                ) : (
-                  course.chapters?.map((chapter, chapterIndex) => (
-                    <div
-                      key={chapter.id}
-                      className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all"
-                    >
-                      <button
-                        onClick={() => toggleChapter(chapter.id)}
-                        className="w-full px-5 py-4 bg-slate-50 hover:bg-slate-100 transition flex items-center justify-between"
-                      >
-                        <div className="text-left">
-                          <h3 className="font-bold text-lg text-slate-800">
-                            {chapterIndex + 1}. {chapter.title}
-                          </h3>
-                          <p className="text-sm text-slate-500">
-                            {chapter.lessonsCount} bài học
-                          </p>
-                        </div>
-                        <FiChevronDown
-                          className={`transition-transform ${openChapters[chapter.id] ? "rotate-180" : ""
-                            }`}
-                        />
-                      </button>
+                </div>
 
-                      {openChapters[chapter.id] && (
-                        <div className="divide-y divide-gray-100">
-                          {chapter.lessons?.map((lesson, lessonIndex) => (
-                            <div
-                              key={lesson.id}
-                              className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50 transition cursor-pointer"
-                            >
-                              {editingLessonId === lesson.lesson_id ? (
-                                /* Edit Mode */
-                                <div className="flex-1 space-y-2">
-                                  <input
-                                    type="text"
-                                    value={editLesson.title}
-                                    onChange={(e) => setEditLesson({...editLesson, title: e.target.value})}
-                                    className="w-full rounded-lg border border-gray-200 px-2 py-1"
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => handleUpdateLesson(lesson.lesson_id)}
-                                      className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm"
-                                    >
-                                      Lưu
-                                    </button>
-                                    <button
-                                      onClick={cancelEdit}
-                                      className="px-3 py-1 border border-gray-200 text-slate-700 rounded-lg text-sm"
-                                    >
-                                      Hủy
-                                    </button>
-                                  </div>
-                                </div>
-) : (
-                                /* Display Mode - Different behavior for teacher vs student */
-                                <>
-                                  {/* Teacher: Click to expand accordion, Student: Click to navigate */}
-                                  {isTeacher ? (
-                                    <div 
-                                      onClick={(e) => toggleLesson(lesson.lesson_id || lesson.id, e)}
-                                      className={`flex items-start gap-3 flex-1 cursor-pointer rounded-xl border p-4 mb-3 hover:bg-gray-50 transition-all ${openLessonId === (lesson.lesson_id || lesson.id) ? 'border-blue-300 bg-blue-50' : 'border-gray-100'}`}
-                                    >
-                                      <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                        isEnrolled ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
-                                      }`}>
-                                        {lessonIndex + 1}
-                                      </div>
-                                      <div className="flex-1">
-                                        <p className="font-medium text-slate-800">
-                                          {lesson.title}
-                                        </p>
-                                        <p className="text-sm text-slate-500 flex items-center gap-2">
-                                          {lesson.video_url && "🎥 Video"}
-                                          {lesson.content && "📄 Tài liệu"}
-                                          {lesson.duration || ""}
-                                        </p>
-                                        {/* Expanded content - show details when open */}
-                                        {openLessonId === (lesson.lesson_id || lesson.id) && (
-                                          <div className="mt-3 space-y-2 text-sm">
-                                            {lesson.video_url && (
-                                              <div className="text-blue-600">
-                                                <span className="font-medium">Video:</span> {lesson.video_url.substring(0, 50)}...
-                                              </div>
-                                            )}
-                                            {lesson.description && (
-                                              <div className="text-slate-600">
-                                                <span className="font-medium">Mô tả:</span> {lesson.description}
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <FiChevronDown className={`transition-transform ${openLessonId === (lesson.lesson_id || lesson.id) ? "rotate-180" : ""} text-slate-400`} />
-                                    </div>
-                                  ) : (
-                                    /* Student: Navigate to learning page */
-                                    <div 
-                                      onClick={(e) => handleLessonClick(lesson.lesson_id || lesson.id, e)}
-                                      className="flex items-start gap-3 flex-1 cursor-pointer"
-                                    >
-                                      <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                        isEnrolled ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
-                                      }`}>
-                                        {lessonIndex + 1}
-                                      </div>
-                                      <div>
-                                        <p className="font-medium text-slate-800">
-                                          {lesson.title}
-                                        </p>
-                                        <p className="text-sm text-slate-500 flex items-center gap-2">
-                                          {lesson.video_url && "🎥 Video"}
-                                          {lesson.content && "📄 Tài liệu"}
-                                          {lesson.duration || ""}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  )}
+                <div className="rounded-2xl bg-slate-50 p-5">
+                  <div className="font-bold text-slate-800 mb-2">
+                    Đơn hàng số lượng lớn
+                  </div>
 
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-slate-400 text-sm mr-2">
-                                      {isEnrolled ? (
-                                        <span className="text-green-600 flex items-center gap-1">
-                                          <FiCheckCircle /> Đã học
-                                        </span>
-                                      ) : (
-                                        <span className="flex items-center gap-1">
-                                          <FiLock /> Chưa học
-                                        </span>
-                                      )}
-                                    </div>
-                                    
-                                    {/* Teacher Actions - with e.stopPropagation() to prevent accordion toggle */}
-                                    {isTeacher && (
-                                      <div className="flex gap-1">
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); startEditLesson(lesson); }}
-                                          className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                                          title="Chỉnh sửa"
-                                        >
-                                          <FiEdit2 size={16} />
-                                        </button>
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); handleDeleteLesson(lesson.lesson_id || lesson.id); }}
-                                          className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                          title="Xóa"
-                                        >
-                                          <FiTrash2 size={16} />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
+                  <div className="text-slate-600">
+                    Liên hệ bộ phận kinh doanh để có
+                    chính sách giá phù hợp.
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-5">
+                  <div className="font-bold text-slate-800 mb-2">
+                    Hỗ trợ
+                  </div>
+
+                  <div className="text-slate-600">
+                    Tư vấn quy cách, sản lượng và giao
+                    hàng.
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-[28px] border border-gray-100 p-8 shadow-sm">
-              <div className="flex items-center gap-2 mb-6">
-                <FiStar className="text-orange-500" />
+            <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <FiStar
+                  className="text-orange-500"
+                  size={22}
+                />
+
                 <h2 className="text-2xl font-bold text-slate-800">
-                  Đánh giá khóa học
+                  Đánh giá sản phẩm
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-6">
                 <div className="rounded-3xl bg-slate-50 border border-gray-100 p-6">
-                  <div className="text-5xl font-bold text-slate-800 mb-2">
-                    {reviewStats.total > 0 ? reviewStats.average : "0.0"}
+                  <div className="text-5xl font-bold text-slate-800 mb-3">
+                    {reviewStats.total >
+                    0
+                      ? reviewStats.average.toFixed(
+                          1
+                        )
+                      : "0.0"}
                   </div>
-                  <div className="flex items-center gap-1 text-orange-500 mb-2">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <FiStar key={index} fill="currentColor" />
-                    ))}
+
+                  <div className="flex items-center gap-1 text-orange-500 mb-3">
+                    {[
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                    ].map(
+                      (star) => (
+                        <FiStar
+                          key={star}
+                          fill={
+                            star <=
+                            Math.round(
+                              reviewStats.average
+                            )
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
+                      )
+                    )}
                   </div>
+
                   <p className="text-sm text-slate-500">
-                    {reviewStats.total} lượt đánh giá từ học viên
+                    {
+                      reviewStats.total
+                    }{" "}
+                    lượt đánh giá
                   </p>
                 </div>
 
                 <div className="rounded-3xl border border-gray-100 p-6">
                   <h3 className="font-bold text-slate-800 mb-4">
-                    Đánh giá của bạn
+                    {editingReviewId
+                      ? "Cập nhật đánh giá của bạn"
+                      : "Đánh giá của bạn"}
                   </h3>
 
-                  <div className="flex gap-2 mb-4 flex-wrap">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() =>
-                          setReviewForm((prev) => ({ ...prev, rating: star }))
-                        }
-                        className={`w-11 h-11 rounded-2xl border flex items-center justify-center ${reviewForm.rating >= star
-                          ? "bg-orange-50 border-orange-200 text-orange-500"
-                          : "bg-white border-gray-200 text-gray-400"
+                  <div className="flex gap-2 mb-4">
+                    {[
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                    ].map(
+                      (star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() =>
+                            setReviewForm(
+                              (
+                                prev
+                              ) => ({
+                                ...prev,
+                                rating:
+                                  star,
+                              })
+                            )
+                          }
+                          className={`w-11 h-11 rounded-2xl border flex items-center justify-center ${
+                            reviewForm.rating >=
+                            star
+                              ? "bg-orange-50 border-orange-200 text-orange-500"
+                              : "bg-white border-gray-200 text-gray-400"
                           }`}
-                      >
-                        <FiStar fill="currentColor" />
-                      </button>
-                    ))}
+                        >
+                          <FiStar
+                            fill="currentColor"
+                          />
+                        </button>
+                      )
+                    )}
                   </div>
 
                   <textarea
                     rows={4}
-                    value={reviewForm.comment}
-                    onChange={(e) =>
-                      setReviewForm((prev) => ({
-                        ...prev,
-                        comment: e.target.value,
-                      }))
+                    value={
+                      reviewForm.comment
                     }
-                    placeholder="Nhập cảm nhận của bạn về khóa học..."
+                    onChange={(
+                      event
+                    ) =>
+                      setReviewForm(
+                        (
+                          prev
+                        ) => ({
+                          ...prev,
+                          comment:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                    placeholder="Nhập nhận xét về sản phẩm..."
                     className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B]"
                   />
 
-                  <button
-                    onClick={handleSubmitReview}
-                    className="mt-4 px-5 py-3 rounded-2xl bg-[#002B5B] text-white font-semibold hover:opacity-90"
-                  >
-                    Gửi đánh giá
-                  </button>
+                  <div className="flex flex-wrap gap-3 mt-4">
+                    <button
+                      onClick={
+                        handleSubmitReview
+                      }
+                      className="px-5 py-3 rounded-2xl bg-[#002B5B] text-white font-semibold hover:opacity-90"
+                    >
+                      {editingReviewId
+                        ? "Cập nhật đánh giá"
+                        : "Gửi đánh giá"}
+                    </button>
+
+                    {editingReviewId && (
+                      <button
+                        onClick={() =>
+                          requestDeleteReview(
+                            editingReviewId
+                          )
+                        }
+                        className="px-5 py-3 rounded-2xl border border-red-200 text-red-600 font-semibold hover:bg-red-50"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <FiTrash2 />
+                          Xóa đánh giá
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="mt-8 space-y-4">
-                {reviews.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-gray-200 p-5 text-slate-500">
-                    Chưa có đánh giá nào cho khóa học này.
+                {reviews.length ===
+                0 ? (
+                  <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-slate-500 text-center">
+                    Chưa có đánh giá nào cho sản phẩm
+                    này.
                   </div>
                 ) : (
-                  reviews.map((item) => (
-                    <div
-                      key={item.id}
-                      className="rounded-2xl border border-gray-100 p-5"
-                    >
-                      <div className="flex items-center justify-between gap-4 mb-2">
-                        <div className="flex items-center gap-2 text-slate-800 font-semibold">
-                          <FiUser />
-                          {item.userName}
+                  reviews.map(
+                    (item) => (
+                      <div
+                        key={
+                          item.id ||
+                          item.review_id
+                        }
+                        className="rounded-2xl border border-gray-100 p-5"
+                      >
+                        <div className="flex items-center justify-between gap-4 mb-3">
+                          <div className="flex items-center gap-2 text-slate-800 font-semibold">
+                            <FiUser />
+                            {item.userName ||
+                              item.user_name ||
+                              "Khách hàng"}
+                          </div>
+
+                          <div className="flex items-center gap-1 text-orange-500">
+                            {[
+                              1,
+                              2,
+                              3,
+                              4,
+                              5,
+                            ].map(
+                              (star) => (
+                                <FiStar
+                                  key={
+                                    star
+                                  }
+                                  size={
+                                    16
+                                  }
+                                  fill={
+                                    star <=
+                                    Number(
+                                      item.rating ||
+                                        0
+                                    )
+                                      ? "currentColor"
+                                      : "none"
+                                  }
+                                />
+                              )
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-orange-500">
-                          {Array.from({ length: item.rating }).map((_, index) => (
-                            <FiStar key={index} fill="currentColor" />
-                          ))}
-                        </div>
+
+                        <p className="text-slate-600 leading-7">
+                          {item.comment ||
+                            "Khách hàng chưa để lại nhận xét chi tiết."}
+                        </p>
                       </div>
-                      <p className="text-slate-600 leading-7">
-                        {item.comment || "Học viên chưa để lại nhận xét chi tiết."}
-                      </p>
-                    </div>
-                  ))
+                    )
+                  )
                 )}
               </div>
             </div>
           </div>
 
-          <div className="sticky top-6">
+          <div className="sticky top-24">
             <div className="bg-white rounded-[28px] border border-gray-100 p-6 shadow-sm">
-              <div className="rounded-[22px] overflow-hidden mb-6">
+              <div className="rounded-[22px] overflow-hidden mb-6 bg-slate-100">
                 <img
-                  src={course.introVideoThumbnail || course.image}
-                  alt={course.title}
-                  className="w-full h-56 object-cover"
+                  src={image}
+                  alt={productName}
+                  className="w-full h-64 object-cover"
                 />
               </div>
 
-              <div className="flex items-end gap-3 mb-6">
-                <span className="text-4xl font-bold text-[#0F172A]">
-                  {formatPrice(course.price)}
-                </span>
+              <div className="mb-6">
+                <div className="text-sm text-slate-500 mb-2">
+                  Giá sản phẩm
+                </div>
+
+                <div className="text-3xl font-bold text-[#002B5B]">
+                  {formatPrice(
+                    product.price
+                  )}
+                </div>
+
+                {!hasFixedPrice && (
+                  <p className="text-sm text-slate-500 mt-2">
+                    Giá được xác định theo quy cách
+                    và số lượng. Vui lòng liên hệ bộ
+                    phận kinh doanh để nhận báo giá.
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-3 mb-6">
-                <button
-                  onClick={handleEnrollCourse}
-                  className="w-full rounded-2xl bg-[#002B5B] text-white py-3.5 font-semibold hover:opacity-90 transition"
-                >
-                  {isEnrolled ? "Tiếp tục học" : isFreeCourse ? "Đăng ký học" : "Thanh toán & đăng ký"}
-                </button>
+              <div className="rounded-2xl bg-slate-50 border border-gray-100 p-4 mb-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-slate-500">
+                    Số lượng tối thiểu
+                  </span>
 
-                <button
-                  onClick={handleLearnNow}
-                  className="w-full rounded-2xl border border-gray-200 py-3.5 font-semibold text-slate-700 hover:bg-gray-50 transition"
-                >
-                  Học ngay
-                </button>
+                  <span className="font-semibold text-slate-800">
+                    {minQuantity.toLocaleString(
+                      "vi-VN"
+                    )}{" "}
+                    {unit}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">
+                    Đơn vị
+                  </span>
+
+                  <span className="font-semibold text-slate-800">
+                    {unit}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-4 text-sm text-slate-600">
-                <div className="flex items-center gap-3">
-                  <FiClock />
-                  <span>Thời lượng: {course.totalDuration}</span>
+              {hasFixedPrice && (
+                <div className="mb-5">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Số lượng đặt hàng
+                  </label>
+
+                  <div className="flex items-center border border-gray-200 rounded-2xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={
+                        decreaseQuantity
+                      }
+                      className="w-12 h-12 text-lg font-bold text-slate-600 hover:bg-slate-50"
+                    >
+                      −
+                    </button>
+
+                    <input
+                      type="number"
+                      min={
+                        minQuantity
+                      }
+                      value={
+                        quantity
+                      }
+                      onChange={
+                        handleQuantityChange
+                      }
+                      className="flex-1 h-12 text-center font-semibold outline-none"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={
+                        increaseQuantity
+                      }
+                      className="w-12 h-12 text-lg font-bold text-slate-600 hover:bg-slate-50"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="text-xs text-slate-400 mt-2">
+                    Đơn tối thiểu:{" "}
+                    {minQuantity.toLocaleString(
+                      "vi-VN"
+                    )}{" "}
+                    {unit}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <FiPlayCircle />
-                  <span>{course.totalLessons} bài học</span>
+              )}
+
+              {hasFixedPrice && (
+                <div className="flex items-center justify-between mb-5">
+                  <span className="text-slate-500">
+                    Thành tiền
+                  </span>
+
+                  <span className="text-xl font-bold text-[#002B5B]">
+                    {totalPrice.toLocaleString(
+                      "vi-VN"
+                    )}{" "}
+                    VNĐ
+                  </span>
                 </div>
+              )}
+
+              <button
+                onClick={
+                  handleBuyNow
+                }
+                className="w-full rounded-2xl bg-[#002B5B] text-white py-4 font-semibold hover:opacity-90 transition"
+              >
+                {isPurchased
+                  ? "Đã đặt mua"
+                  : hasFixedPrice
+                  ? "Mua ngay"
+                  : "Liên hệ báo giá"}
+              </button>
+
+              <a
+                href="tel:02873008899"
+                className="w-full mt-3 rounded-2xl border border-gray-200 py-3.5 font-semibold text-slate-700 hover:bg-gray-50 transition flex items-center justify-center gap-2"
+              >
+                <FiPhone />
+                Gọi hotline tư vấn
+              </a>
+
+              <div className="border-t border-gray-100 mt-6 pt-6 space-y-4 text-sm text-slate-600">
                 <div className="flex items-center gap-3">
-                  <FiMonitor />
-                  <span>Học trên máy tính</span>
+                  <FiCheckCircle className="text-green-600" />
+                  <span>
+                    Sản phẩm đang được cung cấp
+                  </span>
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <FiSmartphone />
-                  <span>Học trên điện thoại</span>
+                  <FiPackage />
+                  <span>
+                    MOQ theo từng sản phẩm
+                  </span>
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <FiCheckCircle />
-                  <span>Truy cập trọn đời</span>
+                  <FiTruck />
+                  <span>
+                    Hỗ trợ giao hàng theo đơn
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <FiUser />
+                  <span>
+                    Tư vấn khách hàng doanh nghiệp
+                  </span>
                 </div>
               </div>
             </div>
@@ -852,147 +1422,481 @@ const cancelEdit = () => {
       </div>
 
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center px-4">
-          <div className="w-full max-w-2xl bg-white rounded-[30px] border border-gray-100 shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4 py-6 overflow-y-auto">
+          <div className="w-full max-w-3xl bg-white rounded-[30px] shadow-2xl overflow-hidden my-auto">
             <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-bold text-slate-800">
-                  Thanh toán khóa học
+                  Đặt mua sản phẩm
                 </h3>
+
                 <p className="text-sm text-slate-500 mt-1">
-                  Hoàn tất thông tin để đăng ký khóa học
+                  Vui lòng kiểm tra thông tin đơn
+                  hàng trước khi xác nhận.
                 </p>
               </div>
+
               <button
-                onClick={() => setShowPaymentModal(false)}
+                onClick={() =>
+                  setShowPaymentModal(
+                    false
+                  )
+                }
                 className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-slate-500 hover:bg-gray-50"
               >
                 <FiX />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.95fr] gap-0">
-              <div className="p-6 border-r border-gray-100">
-                <h4 className="font-bold text-slate-800 mb-4">Thông tin học viên</h4>
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              <div className="p-6">
+                <h4 className="font-bold text-slate-800 mb-4">
+                  Thông tin khách hàng
+                </h4>
 
                 <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Họ và tên"
-                    value={paymentForm.fullName}
-                    onChange={(e) =>
-                      setPaymentForm((prev) => ({
-                        ...prev,
-                        fullName: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B]"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">
+                      Họ và tên
+                    </label>
 
-                  <input
-                    type="text"
-                    placeholder="Số điện thoại"
-                    value={paymentForm.phone}
-                    onChange={(e) =>
-                      setPaymentForm((prev) => ({
-                        ...prev,
-                        phone: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B]"
-                  />
+                    <div className="relative">
+                      <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
 
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={paymentForm.email}
-                    onChange={(e) =>
-                      setPaymentForm((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B]"
-                  />
+                      <input
+                        type="text"
+                        value={
+                          paymentForm.fullName
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setPaymentForm(
+                            (
+                              prev
+                            ) => ({
+                              ...prev,
+                              fullName:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                        className="w-full rounded-2xl border border-gray-200 pl-11 pr-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B]"
+                      />
+                    </div>
+                  </div>
 
-                  <textarea
-                    rows={3}
-                    placeholder="Ghi chú (không bắt buộc)"
-                    value={paymentForm.note}
-                    onChange={(e) =>
-                      setPaymentForm((prev) => ({
-                        ...prev,
-                        note: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B]"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">
+                      Số điện thoại
+                    </label>
+
+                    <div className="relative">
+                      <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+
+                      <input
+                        type="tel"
+                        value={
+                          paymentForm.phone
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setPaymentForm(
+                            (
+                              prev
+                            ) => ({
+                              ...prev,
+                              phone:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                        className="w-full rounded-2xl border border-gray-200 pl-11 pr-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">
+                      Email
+                    </label>
+
+                    <div className="relative">
+                      <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+
+                      <input
+                        type="email"
+                        value={
+                          paymentForm.email
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setPaymentForm(
+                            (
+                              prev
+                            ) => ({
+                              ...prev,
+                              email:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                        className="w-full rounded-2xl border border-gray-200 pl-11 pr-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">
+                      Địa chỉ giao hàng
+                      <span className="text-red-500 ml-1">
+                        *
+                      </span>
+                    </label>
+
+                    <div className="relative">
+                      <FiMapPin className="absolute left-4 top-4 text-slate-400" />
+
+                      <textarea
+                        rows={3}
+                        value={
+                          paymentForm.address
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setPaymentForm(
+                            (
+                              prev
+                            ) => ({
+                              ...prev,
+                              address:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                        placeholder="Nhập số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                        className="w-full rounded-2xl border border-gray-200 pl-11 pr-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B] resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">
+                      Ghi chú đơn hàng
+                    </label>
+
+                    <textarea
+                      rows={3}
+                      value={
+                        paymentForm.note
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setPaymentForm(
+                          (
+                            prev
+                          ) => ({
+                            ...prev,
+                            note:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                      placeholder="Ví dụ: thời gian giao hàng, yêu cầu đóng gói..."
+                      className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-[#002B5B] resize-none"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="p-6 bg-slate-50">
-                <div className="rounded-3xl bg-white border border-gray-100 p-5 mb-5">
-                  <h4 className="font-bold text-slate-800 mb-3">
-                    Thông tin đơn hàng
-                  </h4>
-                  <p className="text-slate-700 font-semibold leading-7">
-                    {course.title}
-                  </p>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Giảng viên: {course.instructor}
-                  </p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-slate-500">Tổng thanh toán</span>
-                    <span className="text-2xl font-bold text-[#002B5B]">
-                      {formatPrice(course.price)}
-                    </span>
+                <h4 className="font-bold text-slate-800 mb-4">
+                  Tóm tắt đơn hàng
+                </h4>
+
+                <div className="rounded-3xl bg-white border border-gray-100 p-5">
+                  <div className="flex gap-4">
+                    <img
+                      src={image}
+                      alt={productName}
+                      className="w-20 h-20 rounded-xl object-cover"
+                    />
+
+                    <div className="flex-1">
+                      <div className="font-semibold text-slate-800 leading-6">
+                        {
+                          productName
+                        }
+                      </div>
+
+                      <div className="text-sm text-slate-500 mt-1">
+                        {quantity.toLocaleString(
+                          "vi-VN"
+                        )}{" "}
+                        {unit}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-100 mt-5 pt-5 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">
+                        Đơn giá
+                      </span>
+
+                      <span className="font-medium text-slate-700">
+                        {formatPrice(
+                          product.price
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">
+                        Số lượng
+                      </span>
+
+                      <span className="font-medium text-slate-700">
+                        {quantity.toLocaleString(
+                          "vi-VN"
+                        )}{" "}
+                        {unit}
+                      </span>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4 text-sm">
+                      <span className="text-slate-500 shrink-0">
+                        Giao đến
+                      </span>
+
+                      <span className="font-medium text-slate-700 text-right break-words">
+                        {paymentForm.address ||
+                          "Chưa nhập địa chỉ"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <span className="font-semibold text-slate-700">
+                        Tổng tiền hàng
+                      </span>
+
+                      <span className="text-xl font-bold text-[#002B5B]">
+                        {totalPrice.toLocaleString(
+                          "vi-VN"
+                        )}{" "}
+                        VNĐ
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
-                  <button
-                    onClick={() => setPaymentMethod("momo")}
-                    className={`w-full rounded-2xl border px-4 py-3 flex items-center gap-3 text-left ${paymentMethod === "momo"
-                      ? "border-[#002B5B] bg-blue-50"
-                      : "border-gray-200 bg-white"
-                      }`}
-                  >
-                    <FiCreditCard className="text-[#002B5B]" />
-                    <div>
-                      <div className="font-semibold text-slate-800">Ví MoMo</div>
-                      <div className="text-sm text-slate-500">
-                        Phương thức đề xuất
-                      </div>
-                    </div>
-                  </button>
+                <div className="mt-5">
+                  <h4 className="font-bold text-slate-800 mb-3">
+                    Phương thức thanh toán
+                  </h4>
 
-                  <button
-                    onClick={() => setPaymentMethod("banking")}
-                    className={`w-full rounded-2xl border px-4 py-3 flex items-center gap-3 text-left ${paymentMethod === "banking"
-                      ? "border-[#002B5B] bg-blue-50"
-                      : "border-gray-200 bg-white"
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPaymentMethod(
+                          "cod"
+                        )
+                      }
+                      className={`w-full text-left rounded-2xl border p-4 transition ${
+                        paymentMethod ===
+                        "cod"
+                          ? "border-[#002B5B] bg-white ring-2 ring-blue-100"
+                          : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
-                  >
-                    <FiCreditCard className="text-[#002B5B]" />
-                    <div>
-                      <div className="font-semibold text-slate-800">
-                        Chuyển khoản ngân hàng
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center ${
+                            paymentMethod ===
+                            "cod"
+                              ? "border-[#002B5B]"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {paymentMethod ===
+                            "cod" && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#002B5B]" />
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="font-semibold text-slate-800 flex items-center gap-2">
+                            <FiTruck />
+                            Thanh toán khi nhận hàng
+                            (COD)
+                          </div>
+
+                          <p className="text-sm text-slate-500 mt-1">
+                            Thanh toán khi đơn hàng
+                            được giao đến địa chỉ của
+                            bạn.
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-sm text-slate-500">
-                        Giả lập thanh toán thành công
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPaymentMethod(
+                          "vnpay"
+                        )
+                      }
+                      className={`w-full text-left rounded-2xl border p-4 transition ${
+                        paymentMethod ===
+                        "vnpay"
+                          ? "border-[#002B5B] bg-white ring-2 ring-blue-100"
+                          : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center ${
+                            paymentMethod ===
+                            "vnpay"
+                              ? "border-[#002B5B]"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {paymentMethod ===
+                            "vnpay" && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#002B5B]" />
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="font-semibold text-slate-800 flex items-center gap-2">
+                            <FiCreditCard />
+                            Thanh toán trực tuyến
+                            (VNPay)
+                          </div>
+
+                          <p className="text-sm text-slate-500 mt-1">
+                            Chuyển đến cổng VNPay để
+                            hoàn tất thanh toán trực
+                            tuyến.
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-blue-50 border border-blue-100 p-4 mt-4">
+                  <div className="flex items-start gap-3">
+                    {paymentMethod ===
+                    "cod" ? (
+                      <FiTruck className="text-blue-700 mt-0.5" />
+                    ) : (
+                      <FiCreditCard className="text-blue-700 mt-0.5" />
+                    )}
+
+                    <div>
+                      <div className="font-semibold text-blue-900">
+                        {paymentMethod ===
+                        "cod"
+                          ? "Thanh toán khi nhận hàng"
+                          : "Thanh toán trực tuyến VNPay"}
+                      </div>
+
+                      <div className="text-sm text-blue-700 mt-1">
+                        {paymentMethod ===
+                        "cod"
+                          ? "Đơn hàng sẽ được tiếp nhận và nhân viên ASIAPP sẽ liên hệ xác nhận trước khi giao."
+                          : "Bạn sẽ được chuyển đến cổng VNPay để hoàn tất giao dịch."}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 </div>
 
                 <button
-                  onClick={handleConfirmPayment}
-                  disabled={isProcessingPayment}
-                  className="w-full rounded-2xl bg-[#002B5B] text-white py-3.5 font-semibold hover:opacity-90 transition disabled:opacity-60"
+                  onClick={
+                    handleConfirmPayment
+                  }
+                  disabled={
+                    isProcessingPayment
+                  }
+                  className="w-full mt-5 rounded-2xl bg-[#002B5B] text-white py-4 font-semibold hover:opacity-90 transition disabled:opacity-60"
                 >
-                  {isProcessingPayment ? "Đang xử lý..." : "Xác nhận thanh toán"}
+                  {isProcessingPayment
+                    ? paymentMethod ===
+                      "vnpay"
+                      ? "Đang chuyển đến VNPay..."
+                      : "Đang tạo đơn hàng..."
+                    : paymentMethod ===
+                      "vnpay"
+                    ? "Thanh toán qua VNPay"
+                    : "Xác nhận đặt hàng"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[110] bg-black/50 flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white rounded-[28px] shadow-2xl p-6">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4">
+              <FiTrash2
+                size={22}
+              />
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-800">
+              Xóa đánh giá?
+            </h3>
+
+            <p className="text-slate-500 mt-2 leading-6">
+              Bạn có chắc chắn muốn xóa đánh giá
+              này? Hành động này không thể hoàn tác.
+            </p>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteConfirm(
+                    false
+                  );
+                  setDeleteReviewId(
+                    null
+                  );
+                }}
+                className="px-5 py-3 rounded-2xl border border-gray-200 text-slate-700 font-semibold hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  handleDeleteReview
+                }
+                className="px-5 py-3 rounded-2xl bg-red-600 text-white font-semibold hover:bg-red-700"
+              >
+                Xóa đánh giá
+              </button>
             </div>
           </div>
         </div>

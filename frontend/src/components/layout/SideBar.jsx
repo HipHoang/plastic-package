@@ -1,38 +1,70 @@
 import React from "react";
 import {
-  FiBookOpen,
   FiChevronLeft,
   FiChevronRight,
   FiHome,
-  FiMapPin,
+  FiPackage,
+  FiGrid,
+  FiShoppingBag,
   FiMessageCircle,
   FiSettings,
+  FiUser,
 } from "react-icons/fi";
-import { HiSparkles } from "react-icons/hi2";
 import { NavLink } from "react-router-dom";
 
 const Sidebar = ({ isExpanded, setIsExpanded }) => {
   const menuItems = [
-    { name: "Trang chủ", icon: <FiHome />, path: "/" },
-    { name: "Khóa học của tôi", icon: <FiBookOpen />, path: "/courses" },
-    { name: "Lộ trình học", icon: <FiMapPin />, path: "/pathway" },
     {
-      name: "Đề xuất cho bạn",
-      icon: <HiSparkles />,
-      path: "/ai",
-      hasBadge: true,
-      badgeText: "AI",
+      name: "Trang chủ",
+      icon: <FiHome />,
+      path: "/",
     },
-    { name: "Hỏi đáp (Q&A)", icon: <FiMessageCircle />, path: "/qa" },
-    { name: "Cài đặt", icon: <FiSettings />, path: "/settings" },
+    {
+      name: "Sản phẩm",
+      icon: <FiPackage />,
+      path: "/all-courses",
+    },
+    {
+      name: "Danh mục sản phẩm",
+      icon: <FiGrid />,
+      path: "/all-courses",
+    },
+    {
+      name: "Đơn hàng của tôi",
+      icon: <FiShoppingBag />,
+      path: "/orders",
+    },
+    {
+      name: "Hỏi đáp",
+      icon: <FiMessageCircle />,
+      path: "/qa",
+    },
+    {
+      name: "Tài khoản",
+      icon: <FiUser />,
+      path: "/settings",
+    },
+    {
+      name: "Cài đặt",
+      icon: <FiSettings />,
+      path: "/settings",
+    },
   ];
 
   return (
-    <div className="h-full flex flex-col p-4 text-white bg-[#021e4b]">
+    <div className="h-full min-h-screen flex flex-col p-4 text-white bg-[#021e4b]">
       <div className="mb-8 flex justify-end">
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          type="button"
+          onClick={() =>
+            setIsExpanded(!isExpanded)
+          }
           className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          aria-label={
+            isExpanded
+              ? "Thu gọn menu"
+              : "Mở rộng menu"
+          }
         >
           {isExpanded ? (
             <FiChevronLeft size={20} />
@@ -43,12 +75,14 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
       </div>
 
       <nav className="flex flex-col gap-2">
-        {menuItems.map((item, index) => (
+        {menuItems.map((item) => (
           <NavLink
-            key={index}
+            key={`${item.name}-${item.path}`}
             to={item.path}
+            end={item.path === "/"}
             className={({ isActive }) => `
-              flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all
+              flex items-center gap-4 p-3 rounded-xl cursor-pointer
+              transition-all
               ${
                 isActive
                   ? "bg-[#0047AB] text-white shadow-lg shadow-blue-900/20"
@@ -56,20 +90,14 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
               }
             `}
           >
-            <div className="text-xl flex-none">{item.icon}</div>
+            <div className="text-xl flex-none">
+              {item.icon}
+            </div>
 
             {isExpanded && (
-              <div className="flex items-center flex-1 justify-between overflow-hidden">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  {item.name}
-                </span>
-
-                {item.hasBadge && (
-                  <span className="bg-blue-500 text-[10px] px-1.5 py-0.5 rounded text-white uppercase font-bold ml-2">
-                    {item.badgeText}
-                  </span>
-                )}
-              </div>
+              <span className="whitespace-nowrap text-sm font-medium overflow-hidden">
+                {item.name}
+              </span>
             )}
           </NavLink>
         ))}
@@ -79,3 +107,4 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
 };
 
 export default Sidebar;
+

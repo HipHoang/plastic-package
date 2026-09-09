@@ -3,16 +3,17 @@ import Sidebar from "./SideBar";
 import TeacherSidebar from "./TeacherSidebar";
 import Header from "./Header";
 import Footer from "./Footer";
+import { getStoredAuth, isStaffRole, isAdminRole } from "../../untils/auth";
 
 const Layout = ({ children }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-  const user = currentUser?.user || currentUser;
+  const currentAuth = getStoredAuth();
+  const user = currentAuth?.user || null;
   const role = user?.role;
 
-  const isTeacher =
-    role === "teacher" || role === "GiangVien" || role === "GV";
+  const isManagement =
+    isAdminRole(role) || isStaffRole(role);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
@@ -26,7 +27,7 @@ const Layout = ({ children }) => {
             className={`transition-all duration-300 ease-in-out bg-[#001E3C] flex-none min-h-[calc(100vh-80px)]
             ${isExpanded ? "w-64" : "w-20"}`}
           >
-            {isTeacher ? (
+            {isManagement ? (
               <TeacherSidebar
                 isExpanded={isExpanded}
                 setIsExpanded={setIsExpanded}
@@ -47,7 +48,9 @@ const Layout = ({ children }) => {
         >
           <div
             className={`w-full ${
-              user ? "max-w-400 mx-auto" : "max-w-7xl mx-auto"
+              user
+                ? "max-w-400 mx-auto"
+                : "max-w-7xl mx-auto"
             }`}
           >
             {children}

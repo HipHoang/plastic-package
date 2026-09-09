@@ -1,91 +1,220 @@
 import React, { useState } from "react";
-import { GoogleLogin } from '@react-oauth/google';
-import { loginApi, loginGoogleApi } from "../../services/authService"; //[cite: 1]
-import { setStoredAuth, isTeacherRole } from "../../untils/auth"; //[cite: 3]
-import { useAuth } from "../../context/AuthProvider"; //[cite: 6]
+import { GoogleLogin } from "@react-oauth/google";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import {
+  loginApi,
+  loginGoogleApi,
+} from "../../services/authService";
+
+import {
+  setStoredAuth,
+  isTeacherRole,
+} from "../../untils/auth";
+
+import { useAuth } from "../../context/AuthProvider";
 
 const LoginForm = ({ onSwitchType }) => {
-  const { setUser } = useAuth(); //[cite: 6]
+  const { setUser } = useAuth();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
+
   const [form, setForm] = useState({
     email: "",
     password: "",
     remember: true,
   });
 
-  // Xử lý thay đổi input
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setForm((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
     }));
   };
 
-  // Kiểm tra tính hợp lệ của form[cite: 3]
   const validate = () => {
     const newErrors = {};
-    if (!form.email.trim()) newErrors.email = "Email không được để trống";
-    if (!form.password.trim()) newErrors.password = "Mật khẩu không được để trống";
+
+    if (!form.email.trim()) {
+      newErrors.email =
+        "Email không được để trống";
+    }
+
+    if (!form.password.trim()) {
+      newErrors.password =
+        "Mật khẩu không được để trống";
+    }
+
     return newErrors;
   };
 
-  // Logic chung sau khi đăng nhập thành công
-  const handleAuthSuccess = (data, isRemember) => {
-    setStoredAuth(data, isRemember); //[cite: 3]
-    setUser(data.user); //[cite: 6]
+  /*
+   * Xác định nơi cần quay lại sau khi đăng nhập.
+   *
+   * Nếu LoginForm được mở từ CourseDetail:
+   *   window.location.pathname = /courses/1
+   *
+   * thì giữ nguyên trang sản phẩm.
+   *
+   * Nếu đăng nhập bình thường:
+   *   về trang chủ.
+   */
+  const getReturnPath = () => {
+    const currentPath =
+      location.pathname +
+      location.search +
+      location.hash;
 
-    // Điều hướng dựa trên vai trò người dùng[cite: 3, 7]
-    if (isTeacherRole(data.user?.role)) {
-      window.location.href = "/teacher/dashboard";
-    } else {
-      window.location.href = "/";
+    if (
+      currentPath &&
+      currentPath !== "/" &&
+      currentPath !== "/login" &&
+      currentPath !== "/register"
+    ) {
+      return currentPath;
     }
+
+    return "/";
   };
 
-  // 1. Đăng nhập truyền thống[cite: 3, 7]
+  const handleAuthSuccess = (
+    data,
+    isRemember
+  ) => {
+    if (!data?.user) {
+      setSubmitError(
+        "Đăng nhập thành công nhưng không nhận được thông tin tài khoản."
+      );
+      return;
+    }
+
+    setStoredAuth(
+      data,
+      isRemember
+    );
+
+    setUser(data.user);
+
+    /*
+     * Nhân viên / quản trị viên:
+     * luôn vào trang quản trị.
+     */
+    if (
+      isTeacherRole(data.user?.role)
+    ) {
+      window.location.href =
+        "/teacher/dashboard";
+      return;
+    }
+
+    /*
+     * Khách hàng:
+     * giữ nguyên trang hiện tại.
+     *
+     * Ví dụ:
+     * /courses/4
+     * sẽ vẫn ở /courses/4.
+     */
+    const returnPath =
+      getReturnPath();
+
+    window.location.href =
+      returnPath;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = validate();
+
+    const newErrors =
+      validate();
+
     setErrors(newErrors);
     setSubmitError("");
 
-    if (Object.keys(newErrors).length > 0) return;
+    if (
+      Object.keys(newErrors).length > 0
+    ) {
+      return;
+    }
 
     try {
       setLoading(true);
-      const response = await loginApi({
-        email: form.email.trim(),
-        password: form.password.trim(),
-      });
-      // Response từ loginApi thường là object chứa data[cite: 1, 7]
-      handleAuthSuccess(response, form.remember);
+
+      const response =
+        await loginApi({
+          email:
+            form.email.trim(),
+          password:
+            form.password.trim(),
+        });
+
+      handleAuthSuccess(
+        response,
+        form.remember
+      );
     } catch (error) {
       setSubmitError(
-        error.response?.data?.message || "Email hoặc mật khẩu không chính xác"
+        error?.response?.data?.message ||
+          "Email hoặc mật khẩu không chính xác"
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. Đăng nhập bằng Google[cite: 7, 8]
-  const handleGoogleSuccess = async (credentialResponse) => {
+  const handleGoogleSuccess = async (
+    credentialResponse
+  ) => {
     try {
       setLoading(true);
       setSubmitError("");
-      
-      // Gửi token của Google lên Backend xác thực
-      const result = await loginGoogleApi(credentialResponse.credential); 
-      // Backend trả về success_response chứa data bên trong[cite: 7]
-      const data = result.data; 
 
-      handleAuthSuccess(data, true);
+      if (
+        !credentialResponse?.credential
+      ) {
+        throw new Error(
+          "Không nhận được thông tin xác thực Google"
+        );
+      }
+
+      const result =
+        await loginGoogleApi(
+          credentialResponse.credential
+        );
+
+      /*
+       * authService hiện tại trả:
+       * response.data
+       *
+       * nên result chính là dữ liệu backend.
+       */
+      const data =
+        result?.data || result;
+
+      handleAuthSuccess(
+        data,
+        true
+      );
     } catch (error) {
-      console.error("Google Auth Error:", error);
-      setSubmitError("Đăng nhập Google thất bại. Vui lòng thử lại.");
+      console.error(
+        "Google Auth Error:",
+        error
+      );
+
+      setSubmitError(
+        error?.response?.data?.message ||
+          "Đăng nhập Google thất bại. Vui lòng thử lại."
+      );
     } finally {
       setLoading(false);
     }
@@ -98,13 +227,18 @@ const LoginForm = ({ onSwitchType }) => {
       </h2>
 
       <p className="mx-auto text-center text-sm text-gray-500 mb-8 max-w-xs">
-        Chào mừng bạn quay lại OU Education.
+        Chào mừng bạn quay lại ASIAPP Plastic Packaging.
       </p>
 
-      {/* Form đăng nhập chính */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4"
+      >
         <div className="space-y-1">
-          <label className="text-sm font-semibold text-gray-700 ml-1">Email</label>
+          <label className="text-sm font-semibold text-gray-700 ml-1">
+            Email
+          </label>
+
           <input
             type="email"
             name="email"
@@ -112,14 +246,24 @@ const LoginForm = ({ onSwitchType }) => {
             value={form.email}
             onChange={handleChange}
             className={`w-full rounded-full border px-5 py-3 outline-none transition-all ${
-              errors.email ? "border-red-500 bg-red-50" : "border-gray-200 focus:border-[#002B5B]"
+              errors.email
+                ? "border-red-500 bg-red-50"
+                : "border-gray-200 focus:border-[#002B5B]"
             }`}
           />
-          {errors.email && <p className="text-xs text-red-500 ml-4">{errors.email}</p>}
+
+          {errors.email && (
+            <p className="text-xs text-red-500 ml-4">
+              {errors.email}
+            </p>
+          )}
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-semibold text-gray-700 ml-1">Mật khẩu</label>
+          <label className="text-sm font-semibold text-gray-700 ml-1">
+            Mật khẩu
+          </label>
+
           <input
             type="password"
             name="password"
@@ -127,10 +271,17 @@ const LoginForm = ({ onSwitchType }) => {
             value={form.password}
             onChange={handleChange}
             className={`w-full rounded-full border px-5 py-3 outline-none transition-all ${
-              errors.password ? "border-red-500 bg-red-50" : "border-gray-200 focus:border-[#002B5B]"
+              errors.password
+                ? "border-red-500 bg-red-50"
+                : "border-gray-200 focus:border-[#002B5B]"
             }`}
           />
-          {errors.password && <p className="text-xs text-red-500 ml-4">{errors.password}</p>}
+
+          {errors.password && (
+            <p className="text-xs text-red-500 ml-4">
+              {errors.password}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between px-1">
@@ -142,9 +293,14 @@ const LoginForm = ({ onSwitchType }) => {
               onChange={handleChange}
               className="h-4 w-4 rounded accent-[#002B5B]"
             />
+
             Ghi nhớ
           </label>
-          <button type="button" className="text-sm text-[#002B5B] font-medium hover:underline">
+
+          <button
+            type="button"
+            className="text-sm text-[#002B5B] font-medium hover:underline"
+          >
             Quên mật khẩu?
           </button>
         </div>
@@ -160,25 +316,34 @@ const LoginForm = ({ onSwitchType }) => {
           disabled={loading}
           className="w-full rounded-full bg-[#002B5B] py-3.5 text-white font-bold shadow-lg hover:bg-[#003a78] transition-all active:scale-[0.98] disabled:opacity-70"
         >
-          {loading ? "Đang xử lý..." : "Đăng nhập"}
+          {loading
+            ? "Đang xử lý..."
+            : "Đăng nhập"}
         </button>
       </form>
 
-      {/* Divider "Hoặc" */}
       <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-gray-200"></span>
+          <span className="w-full border-t border-gray-200" />
         </div>
+
         <div className="relative flex justify-center text-sm">
-          <span className="bg-white px-4 text-gray-400 font-medium italic">Hoặc đăng nhập với</span>
+          <span className="bg-white px-4 text-gray-400 font-medium italic">
+            Hoặc đăng nhập với
+          </span>
         </div>
       </div>
 
-      {/* Google Login Button */}
       <div className="flex justify-center mb-8">
         <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={() => setSubmitError("Lỗi kết nối với Google")}
+          onSuccess={
+            handleGoogleSuccess
+          }
+          onError={() =>
+            setSubmitError(
+              "Lỗi kết nối với Google"
+            )
+          }
           useOneTap
           theme="outline"
           shape="pill"
@@ -188,8 +353,11 @@ const LoginForm = ({ onSwitchType }) => {
 
       <div className="text-center text-sm text-gray-600">
         Bạn chưa có tài khoản?{" "}
+
         <button
-          onClick={() => onSwitchType("register")}
+          onClick={() =>
+            onSwitchType("register")
+          }
           className="font-bold text-[#002B5B] hover:underline"
         >
           Đăng ký ngay

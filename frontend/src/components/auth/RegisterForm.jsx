@@ -7,7 +7,7 @@ const RegisterForm = ({ onSwitchType }) => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "student",
+    phone: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -17,6 +17,7 @@ const RegisterForm = ({ onSwitchType }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setForm((prev) => ({
       ...prev,
       [name]: value,
@@ -26,12 +27,22 @@ const RegisterForm = ({ onSwitchType }) => {
   const validate = () => {
     const newErrors = {};
 
-    if (!form.name.trim()) newErrors.name = "Trường này không được để trống";
-    if (!form.email.trim()) newErrors.email = "Trường này không được để trống";
-    if (!form.password.trim()) newErrors.password = "Trường này không được để trống";
+    if (!form.name.trim()) {
+      newErrors.name = "Vui lòng nhập họ và tên";
+    }
 
-    if (!form.confirmPassword.trim()) {
-      newErrors.confirmPassword = "Trường này không được để trống";
+    if (!form.email.trim()) {
+      newErrors.email = "Vui lòng nhập địa chỉ email";
+    }
+
+    if (!form.password) {
+      newErrors.password = "Vui lòng nhập mật khẩu";
+    } else if (form.password.length < 6) {
+      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+    }
+
+    if (!form.confirmPassword) {
+      newErrors.confirmPassword = "Vui lòng nhập lại mật khẩu";
     } else if (form.password !== form.confirmPassword) {
       newErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
     }
@@ -43,11 +54,14 @@ const RegisterForm = ({ onSwitchType }) => {
     e.preventDefault();
 
     const newErrors = validate();
+
     setErrors(newErrors);
     setSubmitError("");
     setSuccessMessage("");
 
-    if (Object.keys(newErrors).length > 0) return;
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
 
     try {
       setLoading(true);
@@ -55,21 +69,25 @@ const RegisterForm = ({ onSwitchType }) => {
       const data = await registerApi({
         name: form.name.trim(),
         email: form.email.trim(),
-        password: form.password.trim(),
-        role: form.role,
+        password: form.password,
+        phone: form.phone.trim(),
+        role: "customer",
       });
 
-      setSuccessMessage(data.message || "Đăng ký thành công");
+      setSuccessMessage(
+        data.message || "Đăng ký tài khoản thành công"
+      );
 
       setTimeout(() => {
         onSwitchType("login");
       }, 1000);
     } catch (error) {
-      console.error(error);
+      console.error("Register error:", error);
+
       setSubmitError(
         error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Đăng ký thất bại"
+          error.response?.data?.error ||
+          "Đăng ký thất bại. Vui lòng thử lại."
       );
     } finally {
       setLoading(false);
@@ -79,11 +97,11 @@ const RegisterForm = ({ onSwitchType }) => {
   return (
     <div>
       <h2 className="mb-2 text-center text-4xl font-extrabold text-blue-900">
-        Đăng ký
+        Tạo tài khoản
       </h2>
 
-      <p className="mx-auto mb-10 max-w-130 text-center text-sm leading-6 text-gray-500">
-        Tạo tài khoản mới để bắt đầu học tập tại OU Education.
+      <p className="mx-auto mb-8 max-w-130 text-center text-sm leading-6 text-gray-500">
+        Đăng ký tài khoản khách hàng để xem sản phẩm và đặt hàng tại ASIAPP.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -91,7 +109,7 @@ const RegisterForm = ({ onSwitchType }) => {
           <input
             type="text"
             name="name"
-            placeholder="Họ và tên của bạn"
+            placeholder="Họ và tên"
             value={form.name}
             onChange={handleChange}
             className={`w-full rounded-full border px-5 py-3 outline-none transition ${
@@ -100,8 +118,11 @@ const RegisterForm = ({ onSwitchType }) => {
                 : "border-gray-200 bg-white focus:border-[#002B5B]"
             }`}
           />
+
           {errors.name && (
-            <p className="mt-2 text-sm font-medium text-red-500">{errors.name}</p>
+            <p className="mt-2 text-sm font-medium text-red-500">
+              {errors.name}
+            </p>
           )}
         </div>
 
@@ -118,9 +139,23 @@ const RegisterForm = ({ onSwitchType }) => {
                 : "border-gray-200 bg-white focus:border-[#002B5B]"
             }`}
           />
+
           {errors.email && (
-            <p className="mt-2 text-sm font-medium text-red-500">{errors.email}</p>
+            <p className="mt-2 text-sm font-medium text-red-500">
+              {errors.email}
+            </p>
           )}
+        </div>
+
+        <div>
+          <input
+            type="tel"
+            name="phone"
+            placeholder="Số điện thoại (không bắt buộc)"
+            value={form.phone}
+            onChange={handleChange}
+            className="w-full rounded-full border border-gray-200 bg-white px-5 py-3 outline-none transition focus:border-[#002B5B]"
+          />
         </div>
 
         <div>
@@ -136,8 +171,11 @@ const RegisterForm = ({ onSwitchType }) => {
                 : "border-gray-200 bg-white focus:border-[#002B5B]"
             }`}
           />
+
           {errors.password && (
-            <p className="mt-2 text-sm font-medium text-red-500">{errors.password}</p>
+            <p className="mt-2 text-sm font-medium text-red-500">
+              {errors.password}
+            </p>
           )}
         </div>
 
@@ -154,6 +192,7 @@ const RegisterForm = ({ onSwitchType }) => {
                 : "border-gray-200 bg-white focus:border-[#002B5B]"
             }`}
           />
+
           {errors.confirmPassword && (
             <p className="mt-2 text-sm font-medium text-red-500">
               {errors.confirmPassword}
@@ -161,35 +200,24 @@ const RegisterForm = ({ onSwitchType }) => {
           )}
         </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-gray-700">
-            Chọn vai trò
-          </label>
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full rounded-full border border-gray-200 bg-white px-5 py-3 outline-none transition focus:border-[#002B5B]"
-          >
-            <option value="student">Học viên</option>
-            <option value="teacher">Giảng viên</option>
-          </select>
-        </div>
-
         {submitError && (
-          <p className="text-sm font-medium text-red-500">{submitError}</p>
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-500">
+            {submitError}
+          </p>
         )}
 
         {successMessage && (
-          <p className="text-sm font-medium text-green-600">{successMessage}</p>
+          <p className="rounded-lg bg-green-50 px-4 py-3 text-sm font-medium text-green-600">
+            {successMessage}
+          </p>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 w-full rounded-full bg-[#002B5B] py-3 text-lg font-semibold text-white shadow-md transition hover:bg-[#003a78] active:scale-[0.98] disabled:opacity-70"
+          className="mt-2 w-full rounded-full bg-[#002B5B] py-3 text-lg font-semibold text-white shadow-md transition hover:bg-[#003a78] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {loading ? "Đang đăng ký..." : "Đăng ký"}
+          {loading ? "Đang tạo tài khoản..." : "Đăng ký tài khoản"}
         </button>
       </form>
 

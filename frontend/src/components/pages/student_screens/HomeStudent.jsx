@@ -1,612 +1,507 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { FiChevronRight, FiPlay, FiStar } from "react-icons/fi";
+import {
+  FiArrowRight,
+  FiChevronRight,
+  FiPackage,
+  FiSearch,
+  FiShield,
+  FiTruck,
+} from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { courseService } from "../../../services/courseService";
-import bannerImg from "../../../assets/Avt1.jpg";
+import { getStoredAuth } from "../../../untils/auth";
 
 const formatPrice = (price) => {
-  if (!price || Number(price) === 0) return "Miễn phí";
-  return `${Number(price).toLocaleString("vi-VN")}VNĐ`;
+  const value = Number(price || 0);
+
+  if (value <= 0) {
+    return "Liên hệ báo giá";
+  }
+
+  return `${value.toLocaleString("vi-VN")} VNĐ`;
 };
 
-const getFirstName = (fullName = "") => {
-  const trimmed = fullName.trim();
-  if (!trimmed) return "bạn";
-  const parts = trimmed.split(/\s+/);
-  return parts[parts.length - 1];
-};
+const getProductName = (product) =>
+  product?.name || product?.title || "Sản phẩm bao bì";
 
-const UserCourseCard = ({ course, onClick }) => (
-  <div
-    onClick={onClick}
-    className="bg-white rounded-4xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all group cursor-pointer"
-  >
-    <div className="h-32 bg-slate-50 relative flex items-center justify-center overflow-hidden">
-      {course.image ? (
-        <img
-          src={course.image || ""}
-          alt={course.title || ""}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-      ) : (
-        <span className="group-hover:scale-110 transition-transform text-4xl">📚</span>
-      )}
+const getProductId = (product) =>
+  product?.product_id || product?.course_id || product?.id;
 
-      <span
-        className={`absolute top-3 right-3 text-[10px] font-bold px-2 py-1 rounded-lg ${Number(course.price) > 0 ? "bg-orange-400 text-white" : "bg-green-500 text-white"
-          }`}
-      >
-        {Number(course.price) > 0 ? "PRO" : "FREE"}
-      </span>
-    </div>
-
-    <div className="p-5">
-      <h4 className="font-bold text-sm mb-1 group-hover:text-[#013396] transition-colors line-clamp-2 min-h-10">
-        {course.title || ""}
-      </h4>
-      <p className="text-xs text-gray-400 mb-4">{course.instructor}</p>
-
-      <div className="mt-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-1 text-orange-400 min-w-fit">
-          <FiStar fill="currentColor" size={12} />
-          <span className="text-xs font-bold">{course.rating || 4.8}</span>
-        </div>
-
-        <span
-          className={`text-sm font-bold text-right whitespace-nowrap ${Number(course.price) > 0 ? "text-blue-700" : "text-green-600"
-            }`}
-        >
-          {formatPrice(course.price)}
-        </span>
-      </div>
-    </div>
-  </div>
-);
-
-const TopicCard = ({ title, onClick }) => (
-  <div
-    onClick={onClick}
-    className="bg-white rounded-[18px] border border-gray-100 px-5 py-4 flex items-center gap-4 hover:shadow-md transition cursor-pointer"
-  >
-    <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-2xl">
-      📘
-    </div>
-    <h4 className="font-semibold text-sm text-slate-700">{title}</h4>
-  </div>
-);
-
-const GuestHome = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("all");
-  const [courses, setCourses] = useState([]);
-  const [loadingCourses, setLoadingCourses] = useState(true);
-
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const data = await courseService.getAllCourses();
-        setCourses(data);
-      } catch (error) {
-        console.error("Lỗi lấy khóa học:", error);
-      } finally {
-        setLoadingCourses(false);
-      }
-    };
-
-    fetchCourses();
-  }, []);
-
-  const featuredCourses = useMemo(() => {
-    let allCourses = [...courses];
-
-    if (activeTab === "free") {
-      allCourses = allCourses.filter((course) => Number(course.price) === 0);
-    }
-
-    if (activeTab === "pro") {
-      allCourses = allCourses.filter((course) => Number(course.price) > 0);
-    }
-
-    return allCourses;
-  }, [courses, activeTab]);
-
-  const displayedFeaturedCourses = (featuredCourses || []).slice(0, 4);
-
-  const popularTopics = useMemo(() => {
-    const categoryMap = new Map();
-
-    courses.forEach((course) => {
-      const key = course.category || course.topic || "Khác";
-      if (!categoryMap.has(key)) {
-        categoryMap.set(key, key);
-      }
-    });
-
-    return Array.from(categoryMap.values()).slice(0, 5);
-  }, [courses]);
+const ProductCard = ({ product, onClick }) => {
+  const name = getProductName(product);
 
   return (
-    <div className="space-y-10">
-      <section className="relative bg-linear-to-r from-[#051e58] to-[#1758cf] rounded-[28px] px-8 py-10 md:px-12 md:py-12 overflow-hidden text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl shadow-blue-100">
-        <div className="ml-6 relative z-10 max-w-xl">
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-3">
-            Học tập hiệu quả,
+    <div
+      onClick={onClick}
+      className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+    >
+      <div className="h-48 bg-slate-50 relative overflow-hidden flex items-center justify-center">
+        {product?.image ? (
+          <img
+            src={product.image}
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center text-slate-300">
+            <FiPackage size={52} />
+            <span className="text-xs mt-2">ASIAPP Packaging</span>
+          </div>
+        )}
+
+        {product?.material && (
+          <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-[#003B7A] text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+            {product.material}
+          </span>
+        )}
+      </div>
+
+      <div className="p-5">
+        <h3 className="font-bold text-slate-800 line-clamp-2 min-h-12 group-hover:text-[#0047AB] transition-colors">
+          {name}
+        </h3>
+
+        <div className="mt-3 space-y-1 text-sm text-slate-500">
+          {product?.thickness && (
+            <p>
+              Độ dày:{" "}
+              <span className="text-slate-700">{product.thickness}</span>
+            </p>
+          )}
+
+          {(product?.width || product?.height) && (
+            <p>
+              Kích thước:{" "}
+              <span className="text-slate-700">
+                {product.width || "--"}
+                {product.height ? ` × ${product.height}` : ""}
+              </span>
+            </p>
+          )}
+
+          {product?.color && (
+            <p>
+              Màu sắc:{" "}
+              <span className="text-slate-700">{product.color}</span>
+            </p>
+          )}
+        </div>
+
+        <div className="border-t border-gray-100 mt-4 pt-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs text-slate-400">Giá sản phẩm</p>
+            <p className="font-bold text-[#0047AB]">
+              {formatPrice(product?.price)}
+            </p>
+          </div>
+
+          <span className="w-9 h-9 rounded-full bg-blue-50 text-[#0047AB] flex items-center justify-center group-hover:bg-[#0047AB] group-hover:text-white transition-colors">
+            <FiArrowRight size={17} />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CategoryCard = ({ title, description, onClick }) => (
+  <div
+    onClick={onClick}
+    className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg hover:border-blue-100 transition-all cursor-pointer group"
+  >
+    <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#0047AB] flex items-center justify-center mb-4 group-hover:bg-[#0047AB] group-hover:text-white transition-colors">
+      <FiPackage size={22} />
+    </div>
+
+    <h3 className="font-bold text-slate-800 mb-2">
+      {title}
+    </h3>
+
+    <p className="text-sm text-slate-500 line-clamp-2">
+      {description || "Sản phẩm bao bì nhựa chất lượng cao."}
+    </p>
+
+    <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#0047AB]">
+      Xem sản phẩm
+      <FiChevronRight />
+    </div>
+  </div>
+);
+
+const GuestHome = ({ products, categories, loading }) => {
+  const navigate = useNavigate();
+
+  const featuredProducts = useMemo(
+    () => products.slice(0, 8),
+    [products]
+  );
+
+  return (
+    <div className="space-y-12">
+
+      {/* HERO */}
+      <section className="relative overflow-hidden rounded-[28px] bg-linear-to-r from-[#021E4B] via-[#063B82] to-[#0B63CE] text-white shadow-xl">
+        <div className="relative z-10 px-7 py-12 md:px-12 lg:px-16 md:py-16 max-w-3xl">
+          <span className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm mb-5">
+            <FiPackage />
+            ASIAPP Plastic Packaging
+          </span>
+
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
+            Giải pháp bao bì nhựa
             <br />
-            chinh phục tri thức!
+            cho doanh nghiệp
           </h1>
 
-          <p className="text-blue-100 text-base md:text-lg mb-10 leading-relaxed">
-            Khám phá các khóa học chất lượng và theo đuổi mục tiêu
-            <br />
-            học tập cùng OU Education.
+          <p className="text-blue-100 text-base md:text-lg leading-7 mt-5 max-w-2xl">
+            Khám phá các sản phẩm túi PE, PP, HDPE và túi rác
+            phục vụ nhu cầu đóng gói, sản xuất và công nghiệp.
           </p>
 
-          <button
-            onClick={() => navigate("/all-courses")}
-            className="bg-[#0B5CFF] hover:bg-[#044794] px-7 py-3 mt-4 rounded-full font-semibold transition-all flex items-center gap-2 group shadow-lg"
-          >
-            Khám phá khóa học
-            <FiChevronRight className="group-hover:translate-x-1 transition-transform" />
-          </button>
+          <div className="flex flex-wrap gap-3 mt-8">
+            <button
+              onClick={() => navigate("/all-courses")}
+              className="bg-white text-[#003B7A] px-6 py-3 rounded-full font-bold hover:bg-blue-50 transition flex items-center gap-2"
+            >
+              Xem sản phẩm
+              <FiArrowRight />
+            </button>
+
+            <a
+              href="tel:02873008899"
+              className="border border-white/30 bg-white/10 px-6 py-3 rounded-full font-semibold hover:bg-white/20 transition"
+            >
+              Liên hệ tư vấn
+            </a>
+          </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-center">
-          <img
-            src={bannerImg}
-            alt="Laptop"
-            className="hidden md:block h-64 lg:h-72 object-contain drop-shadow-2xl rounded-2xl"
-          />
+        <div className="absolute -right-24 -bottom-28 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl" />
+        <div className="absolute right-12 top-10 hidden lg:block opacity-20">
+          <FiPackage size={220} />
         </div>
-
-        <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-blue-300/20 rounded-full blur-3xl"></div>
       </section>
 
-      <section>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
+      {/* USP */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 flex gap-4">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50 text-[#0047AB] flex items-center justify-center">
+            <FiPackage size={23} />
+          </div>
           <div>
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="text-2xl font-bold text-slate-800">Khóa học nổi bật</h2>
-              <button
-                onClick={() => navigate("/all-courses")}
-                className="text-[#002B5B] text-sm font-medium flex items-center gap-1 hover:underline"
-              >
-                Xem tất cả <FiChevronRight />
-              </button>
-            </div>
-
-            <div className="flex gap-3 mb-6 flex-wrap">
-              <button
-                onClick={() => setActiveTab("all")}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition ${activeTab === "all"
-                  ? "bg-[#044794] text-white"
-                  : "bg-white text-gray-500 border border-gray-100 hover:bg-gray-50"
-                  }`}
-              >
-                Tất cả
-              </button>
-
-              <button
-                onClick={() => setActiveTab("free")}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition ${activeTab === "free"
-                  ? "bg-green-600 text-white"
-                  : "bg-white text-gray-500 border border-gray-100 hover:bg-gray-50"
-                  }`}
-              >
-                Miễn phí
-              </button>
-
-              <button
-                onClick={() => setActiveTab("pro")}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${activeTab === "pro"
-                  ? "bg-[#044794] text-white"
-                  : "bg-white text-gray-500 border border-gray-100 hover:bg-gray-50"
-                  }`}
-              >
-                Pro 
-              </button>
-            </div>
-
-            {loadingCourses ? (
-              <div className="bg-white rounded-3xl border border-gray-100 p-6 text-sm text-slate-500">
-                Đang tải khóa học...
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-                {displayedFeaturedCourses.map((course) => (
-                  <UserCourseCard
-                    key={course.id || course.course_id}
-                    course={course}
-                    onClick={() => navigate(`/courses/${course.id || course.course_id}`)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
-            <h3 className="text-[20px] md:text-[22px] font-bold text-[#002B5B] leading-snug mb-4">
-              Tham gia học tập
-              <br />
-              cùng chúng tôi!
+            <h3 className="font-bold text-slate-800">
+              Đa dạng sản phẩm
             </h3>
-
-            <p className="text-sm text-gray-500 leading-6 mb-6">
-              Đăng ký tài khoản
-              <br />
-              để bắt đầu hành trình
-              <br />
-              chinh phục kiến thức của
-              <br />
-              bạn.
+            <p className="text-sm text-slate-500 mt-1">
+              PE, PP, HDPE và nhiều dòng bao bì khác.
             </p>
+          </div>
+        </div>
 
-            <div className="flex gap-3 mb-6">
-              <button
-                onClick={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("openAuthModal", { detail: { type: "register" } })
-                  )
-                }
-                className="flex-1 bg-[#013396] text-white rounded-full py-3 font-semibold hover:bg-[#002B5B] transition"
-              >
-                Đăng ký ngay
-              </button>
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 flex gap-4">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+            <FiShield size={23} />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800">
+              Chất lượng ổn định
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              Thông tin sản phẩm và thông số được quản lý rõ ràng.
+            </p>
+          </div>
+        </div>
 
-              <button
-                onClick={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("openAuthModal", { detail: { type: "login" } })
-                  )
-                }
-                className="flex-1 bg-white border border-gray-200 text-[#002B5B] rounded-full py-3 font-semibold hover:bg-gray-50 transition"
-              >
-                Đăng nhập
-              </button>
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 flex gap-4">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
+            <FiTruck size={23} />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800">
+              Phục vụ doanh nghiệp
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              Hỗ trợ nhu cầu đóng gói và đặt hàng số lượng.
+            </p>
           </div>
         </div>
       </section>
 
+      {/* PRODUCTS */}
       <section>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-2xl font-bold text-[#002B5B]">Chủ đề phổ biến</h2>
+        <div className="flex items-end justify-between gap-4 mb-6">
+          <div>
+            <p className="text-sm font-semibold text-[#0047AB] mb-1">
+              SẢN PHẨM TIÊU BIỂU
+            </p>
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800">
+              Bao bì nhựa nổi bật
+            </h2>
+          </div>
+
           <button
             onClick={() => navigate("/all-courses")}
-            className="text-[#002B5B] text-sm font-medium flex items-center gap-1 hover:underline"
+            className="hidden sm:flex items-center gap-1 text-[#0047AB] text-sm font-semibold hover:underline"
           >
-            Xem tất cả <FiChevronRight />
+            Xem tất cả
+            <FiChevronRight />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {popularTopics.map((topic) => (
-            <TopicCard
-              key={topic}
-              title={topic}
-              onClick={() =>
-                navigate(`/all-courses?topic=${encodeURIComponent(topic)}`)
-              }
-            />
-          ))}
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-slate-500">
+            Đang tải sản phẩm...
+          </div>
+        ) : featuredProducts.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-slate-500">
+            Chưa có sản phẩm.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {featuredProducts.map((product) => (
+              <ProductCard
+                key={getProductId(product)}
+                product={product}
+                onClick={() =>
+                  navigate(`/courses/${getProductId(product)}`)
+                }
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* CATEGORIES */}
+      <section>
+        <div className="flex items-end justify-between gap-4 mb-6">
+          <div>
+            <p className="text-sm font-semibold text-[#0047AB] mb-1">
+              DANH MỤC
+            </p>
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800">
+              Tìm sản phẩm theo nhu cầu
+            </h2>
+          </div>
+
+          <button
+            onClick={() => navigate("/all-courses")}
+            className="hidden sm:flex items-center gap-1 text-[#0047AB] text-sm font-semibold hover:underline"
+          >
+            Xem tất cả
+            <FiChevronRight />
+          </button>
         </div>
+
+        {categories.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {categories.slice(0, 4).map((category) => (
+              <CategoryCard
+                key={category.id || category.category_id}
+                title={category.name}
+                description={category.description}
+                onClick={() =>
+                  navigate(
+                    `/all-courses?category_id=${
+                      category.id || category.category_id
+                    }`
+                  )
+                }
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {["Túi PE", "Túi PP", "Túi HDPE", "Túi rác"].map((item) => (
+              <CategoryCard
+                key={item}
+                title={item}
+                onClick={() =>
+                  navigate(`/all-courses?q=${encodeURIComponent(item)}`)
+                }
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* CTA */}
+      <section className="bg-[#021E4B] rounded-[28px] p-8 md:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold">
+            Cần tư vấn sản phẩm bao bì?
+          </h2>
+          <p className="text-blue-100 mt-2">
+            Liên hệ ASIAPP để được hỗ trợ về sản phẩm và số lượng đặt hàng.
+          </p>
+        </div>
+
+        <a
+          href="tel:02873008899"
+          className="shrink-0 bg-white text-[#003B7A] px-7 py-3 rounded-full font-bold hover:bg-blue-50 transition"
+        >
+          Liên hệ tư vấn
+        </a>
       </section>
     </div>
   );
 };
 
-const UserDashboard = ({ currentUser }) => {
+const UserHome = ({ currentUser, products, categories, loading }) => {
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState("all");
-  const [myCourses, setMyCourses] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [loadingCourses, setLoadingCourses] = useState(true);
-
-  useEffect(() => {
-  // TODO: sau này thay bằng API getMyCourses
-  setMyCourses([]); // tránh crash
-}, []);
-
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const data = await courseService.getAllCourses();
-        setCourses(data);
-      } catch (error) {
-        console.error("Lỗi lấy khóa học:", error);
-      } finally {
-        setLoadingCourses(false);
-      }
-    };
-
-    fetchCourses();
-  }, []);
-
-  const featuredCourses = useMemo(() => {
-    let allCourses = [...courses];
-
-    if (activeTab === "free") {
-      allCourses = allCourses.filter((course) => Number(course.price) === 0);
-    }
-
-    if (activeTab === "pro") {
-      allCourses = allCourses.filter((course) => Number(course.price) > 0);
-    }
-
-    return allCourses;
-  }, [courses, activeTab]);
-
-  const displayedFeaturedCourses = featuredCourses.slice(0, 4);
-  const continueLearningCourses = (myCourses || []).filter(
-  (course) => Number(course?.progress || 0) < 100
-);
-  const roadmapCourses = (myCourses || []).slice(0, 2);
-
-  const averageProgress = myCourses.length
-    ? Math.round(
-      myCourses.reduce((sum, item) => sum + Number(item.progress || 0), 0) /
-      myCourses.length
-    )
-    : 0;
-
-  const firstName = getFirstName(currentUser.fullName || "");
+  const firstName =
+    currentUser?.name ||
+    currentUser?.fullName ||
+    currentUser?.email?.split("@")[0] ||
+    "bạn";
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
-      <div className="flex-1 space-y-10">
-        <div className="relative bg-[#002B5B] rounded-4xl p-8 md:p-12 overflow-hidden text-white flex items-center justify-between shadow-xl shadow-blue-100">
-          <div className="mr-5 relative z-10 max-w-lg">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              Chào mừng {firstName} quay trở lại!
-            </h1>
+    <div className="space-y-10">
+      <section className="bg-linear-to-r from-[#021E4B] to-[#0757B8] rounded-[28px] p-8 md:p-12 text-white">
+        <p className="text-blue-200 text-sm mb-2">
+          Chào mừng bạn quay trở lại
+        </p>
 
-            <p className="text-blue-100 text-lg leading-relaxed mb-10">
-              Học tập hiệu quả, chinh phục tri thức!
-              <br />
-              <span className="text-sm opacity-80 font-light">
-                Khám phá các khóa học chất lượng và theo dõi tiến độ học tập dễ dàng cùng OU
-                Education.
-              </span>
+        <h1 className="text-3xl md:text-4xl font-bold">
+          Xin chào, {firstName}
+        </h1>
+
+        <p className="text-blue-100 mt-3 max-w-2xl">
+          Khám phá sản phẩm bao bì nhựa và lựa chọn giải pháp phù hợp
+          cho nhu cầu của bạn.
+        </p>
+
+        <button
+          onClick={() => navigate("/all-courses")}
+          className="mt-6 bg-white text-[#003B7A] px-6 py-3 rounded-full font-bold hover:bg-blue-50 transition flex items-center gap-2"
+        >
+          Xem sản phẩm
+          <FiArrowRight />
+        </button>
+      </section>
+
+      <section>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <p className="text-sm font-semibold text-[#0047AB]">
+              GỢI Ý CHO BẠN
             </p>
-
-            <button
-              onClick={() => navigate("/all-courses")}
-              className="bg-[#007bff] hover:bg-blue-600 px-7 py-3 mt-4 rounded-full font-semibold transition-all flex items-center gap-2 group"
-            >
-              Khám phá khóa học
-              <FiChevronRight className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            <h2 className="text-2xl font-bold text-slate-800">
+              Sản phẩm nổi bật
+            </h2>
           </div>
 
-          <div className="hidden md:block w-64 h-64 bg-blue-400/20 rounded-full blur-3xl absolute -right-10 -bottom-10"></div>
-
-          <img
-            src="https://img.freepik.com/free-vector/learning-concept-illustration_114360-6186.jpg"
-            alt="Học tập"
-            className="hidden md:block h-64 w-auto object-contain relative z-10 drop-shadow-2xl rounded-2xl"
-          />
+          <button
+            onClick={() => navigate("/all-courses")}
+            className="flex items-center gap-1 text-[#0047AB] text-sm font-semibold"
+          >
+            Xem tất cả
+            <FiChevronRight />
+          </button>
         </div>
 
-        <section>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-slate-800">Khóa học nổi bật</h2>
-            <button
-              onClick={() => navigate("/all-courses")}
-              className="text-[#044794] text-sm font-medium flex items-center gap-1 hover:underline"
-            >
-              Xem tất cả <FiChevronRight />
-            </button>
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-slate-500">
+            Đang tải sản phẩm...
           </div>
-
-          <div className="flex gap-3 mb-6 flex-wrap">
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition ${activeTab === "all"
-                ? "bg-[#044794] text-white"
-                : "bg-white text-gray-500 border border-gray-100 hover:bg-gray-50"
-                }`}
-            >
-              Tất cả
-            </button>
-
-            <button
-              onClick={() => setActiveTab("free")}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition ${activeTab === "free"
-                ? "bg-green-600 text-white"
-                : "bg-white text-gray-500 border border-gray-100 hover:bg-gray-50"
-                }`}
-            >
-              Miễn phí
-            </button>
-
-            <button
-              onClick={() => setActiveTab("pro")}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${activeTab === "pro"
-                ? "bg-[#044794] text-white"
-                : "bg-white text-gray-500 border border-gray-100 hover:bg-gray-50"
-                }`}
-            >
-              Pro 
-            </button>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {products.slice(0, 8).map((product) => (
+              <ProductCard
+                key={getProductId(product)}
+                product={product}
+                onClick={() =>
+                  navigate(`/courses/${getProductId(product)}`)
+                }
+              />
+            ))}
           </div>
+        )}
+      </section>
 
-          {loadingCourses ? (
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-sm text-slate-500">
-              Đang tải khóa học...
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-              {displayedFeaturedCourses.map((course) => (
-                <UserCourseCard
-                  key={course.id || course.course_id}
-                  course={course}
-                  onClick={() => navigate(`/courses/${course.id || course.course_id}`)}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-slate-800">Tiếp tục học</h2>
-            <button
-              onClick={() => navigate("/all-courses")}
-              className="text-[#044794] text-sm font-medium hover:underline flex items-center gap-1"
-            >
-              Xem tất cả <FiChevronRight />
-            </button>
-          </div>
-
-          {continueLearningCourses.length === 0 ? (
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-sm text-slate-500">
-              Bạn chưa có khóa học nào đang học. Hãy đăng ký một khóa học để bắt đầu.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {(continueLearningCourses || []).slice(0, 2).map((course) => (
-                <div
-                  key={course.courseId}
-                  className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center gap-4 shadow-sm cursor-pointer hover:shadow-md transition"
-                  onClick={() => navigate(`/learn/${course.courseId}`)}
-                >
-                  <div className="w-16 h-16 bg-blue-100 rounded-xl overflow-hidden flex items-center justify-center text-sm font-bold text-[#002B5B]">
-                    {course.image ? (
-                      <img
-                        src={course.image}
-                        alt={course.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      (course.title || "").slice(0, 2).toUpperCase()
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-sm line-clamp-2">{course.title}</h4>
-                    <p className="text-xs text-gray-400 mb-2">
-                      Tiến độ hiện tại: {course.progress}%
-                    </p>
-                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-blue-600 h-full"
-                        style={{ width: `${course.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/learn/${course.courseId}`);
-                    }}
-                    className="bg-blue-600 p-2.5 rounded-full text-white"
-                  >
-                    <FiPlay fill="currentColor" size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-
-      <div className="w-full lg:w-80 space-y-8">
-        <div className="bg-white p-6 rounded-4xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold">Tiến độ học tập</h3>
-            <select className="text-xs bg-gray-50 p-1 rounded border-none outline-none">
-              <option>Hiện tại</option>
-            </select>
-          </div>
-
-          <div className="flex justify-center mb-6">
-            <div className="w-32 h-32 rounded-full border-10 border-gray-100 border-t-blue-600 flex items-center justify-center relative">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-slate-800">{averageProgress}%</p>
-                <p className="text-xs text-gray-400">Trung bình</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Đang học</span>
-              <span className="font-semibold">
-                {(myCourses || []).filter((c) => c?.status === "Đang học")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Hoàn thành</span>
-              <span className="font-semibold">
-                {myCourses.filter((c) => c.status === "Hoàn thành").length}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Tổng khóa học</span>
-              <span className="font-semibold">{myCourses.length}</span>
-            </div>
-          </div>
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <FiSearch className="text-[#0047AB] text-2xl mb-4" />
+          <h3 className="font-bold text-slate-800">
+            Tìm kiếm nhanh
+          </h3>
+          <p className="text-sm text-slate-500 mt-2">
+            Tìm sản phẩm theo tên, chất liệu hoặc nhu cầu sử dụng.
+          </p>
         </div>
 
-        <div className="bg-white p-6 rounded-4xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold">Lộ trình học của bạn</h3>
-            <button
-              onClick={() => navigate("/all-courses")}
-              className="text-blue-600 text-xs font-medium hover:underline"
-            >
-              Xem chi tiết
-            </button>
-          </div>
-
-          <div className="space-y-5">
-            {roadmapCourses.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                Chưa có dữ liệu lộ trình học. Hãy đăng ký khóa học để bắt đầu.
-              </p>
-            ) : (
-              roadmapCourses.map((course, index) => {
-                const isCompleted = Number(course.progress) === 100;
-
-                return (
-                  <div key={course.courseId} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`w-4 h-4 rounded-full ${isCompleted
-                          ? "bg-blue-600"
-                          : "bg-white border-2 border-gray-400"
-                          }`}
-                      ></div>
-                      {index < roadmapCourses.length - 1 && (
-                        <div className="w-0.5 h-16 bg-blue-200"></div>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-sm">{course.title}</h4>
-                      <p className="text-xs text-gray-500">
-                        {isCompleted ? "Đã hoàn thành" : "Đang học"} • {course.progress}%
-                      </p>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <FiPackage className="text-[#0047AB] text-2xl mb-4" />
+          <h3 className="font-bold text-slate-800">
+            Thông số rõ ràng
+          </h3>
+          <p className="text-sm text-slate-500 mt-2">
+            Xem chất liệu, kích thước, độ dày và các thông tin sản phẩm.
+          </p>
         </div>
-      </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <FiTruck className="text-[#0047AB] text-2xl mb-4" />
+          <h3 className="font-bold text-slate-800">
+            Đặt hàng thuận tiện
+          </h3>
+          <p className="text-sm text-slate-500 mt-2">
+            Chọn sản phẩm và tiến hành đặt hàng trực tuyến.
+          </p>
+        </div>
+      </section>
     </div>
   );
 };
 
 const HomeStudent = () => {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!currentUser) {
-    return <GuestHome />;
+  const auth = getStoredAuth();
+  const currentUser = auth?.user || null;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productData, categoryData] = await Promise.all([
+          courseService.getAllCourses(),
+          courseService.getCategories
+            ? courseService.getCategories()
+            : Promise.resolve([]),
+        ]);
+
+        setProducts(Array.isArray(productData) ? productData : []);
+        setCategories(Array.isArray(categoryData) ? categoryData : []);
+      } catch (error) {
+        console.error("Lỗi tải dữ liệu trang chủ:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (currentUser) {
+    return (
+      <UserHome
+        currentUser={currentUser}
+        products={products}
+        categories={categories}
+        loading={loading}
+      />
+    );
   }
 
-  return <UserDashboard currentUser={currentUser} />;
+  return (
+    <GuestHome
+      products={products}
+      categories={categories}
+      loading={loading}
+    />
+  );
 };
 
 export default HomeStudent;

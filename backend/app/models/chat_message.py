@@ -3,13 +3,39 @@ from datetime import datetime
 
 
 class ChatMessage(db.Model):
-    __tablename__ = 'chat_messages'
+    __tablename__ = "chat_messages"
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # "user" or "ai"
-    message = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.user_id"),
+        nullable=False
+    )
+
+    role = db.Column(
+        db.String(20),
+        nullable=False
+    )
+
+    message = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    user = db.relationship(
+        "User",
+        backref="chat_messages",
+        lazy=True
+    )
 
     def to_dict(self):
         return {
@@ -17,6 +43,10 @@ class ChatMessage(db.Model):
             "user_id": self.user_id,
             "role": self.role,
             "message": self.message,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": (
+                self.created_at.isoformat()
+                if self.created_at
+                else None
+            ),
         }
-
+    

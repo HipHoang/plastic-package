@@ -29,7 +29,7 @@ const CourseDetailPopup = ({ id, onClose }) => {
   if (loading) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#021e4b]/40 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-100 bg-[#021e4b]/40 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
       <div className="bg-white rounded-[40px] w-full max-w-5xl max-h-[85vh] overflow-hidden relative shadow-2xl flex flex-col animate-in zoom-in duration-300">
         
         {/* Header di động */}
@@ -90,7 +90,7 @@ const CourseDetailPopup = ({ id, onClose }) => {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-slate-50 rounded-[32px] p-6 border border-slate-100">
+              <div className="bg-slate-50 rounded-4xl p-6 border border-slate-100">
                 <img src={course.image} className="w-full h-40 object-cover rounded-2xl mb-6 shadow-sm" alt="Thumbnail" />
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   <div className="bg-white p-4 rounded-2xl text-center shadow-sm">

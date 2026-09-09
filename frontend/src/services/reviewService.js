@@ -1,92 +1,220 @@
-import { getCurrentUser } from "../untils/auth";
-
-const KEY = "courseReviews";
-
-const getAllReviews = () => {
-  const raw = localStorage.getItem(KEY);
-  return raw ? JSON.parse(raw) : {};
-};
-
-const saveAllReviews = (data) => {
-  localStorage.setItem(KEY, JSON.stringify(data));
-};
+import apiClient from "../untils/auth";
 
 export const reviewService = {
-  getCourseReviews(courseId) {
-    const all = getAllReviews();
-    return all[courseId] || [];
-  },
+  async getCourseReviews(courseId, page = 1, size = 10) {
+    try {
+      const res = await apiClient.get(
+        `/reviews/courses/${courseId}`,
+        {
+          params: {
+            page,
+            size,
+          },
+        }
+      );
 
-  addOrUpdateReview(courseId, payload) {
-    const currentUser = getCurrentUser();
-    if (!currentUser) throw new Error("USER_NOT_LOGGED_IN");
+      const data = res.data?.data || {};
 
-    const all = getAllReviews();
-    const courseReviews = all[courseId] || [];
+      return {
+        page: data.page || page,
+        size: data.size || size,
+        total: data.total || 0,
+        totalPages: data.total_pages || 0,
 
-    const existedIndex = courseReviews.findIndex(
-      (item) => Number(item.userId) === Number(currentUser.id)
-    );
+        reviews: (data.data || []).map((item) =>
+          this.normalizeReview(item)
+        ),
+      };
+    } catch (error) {
+      console.error(
+        "getProductReviews ERROR:",
+        error.response?.data || error
+      );
 
-    const review = {
-      id:
-        existedIndex >= 0
-          ? courseReviews[existedIndex].id
-          : Date.now(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      courseId: Number(courseId),
-      rating: Number(payload.rating),
-      comment: payload.comment?.trim() || "",
-      createdAt:
-        existedIndex >= 0
-          ? courseReviews[existedIndex].createdAt
-          : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (existedIndex >= 0) {
-      courseReviews[existedIndex] = review;
-    } else {
-      courseReviews.unshift(review);
+      return {
+        page,
+        size,
+        total: 0,
+        totalPages: 0,
+        reviews: [],
+      };
     }
-
-    all[courseId] = courseReviews;
-    saveAllReviews(all);
-
-    return review;
   },
 
-  getMyReview(courseId) {
-    const currentUser = getCurrentUser();
-    if (!currentUser) return null;
+  async addOrUpdateReview(productId, payload) {
+    try {
+      const rating = Number(payload?.rating);
 
-    const courseReviews = this.getCourseReviews(courseId);
-    return (
-      courseReviews.find(
-        (item) => Number(item.userId) === Number(currentUser.id)
-      ) || null
-    );
+      if (rating < 1 || rating > 5) {
+        throw new Error("Rating phải từ 1 đến 5");
+      }
+
+      const res = await apiClient.post(
+        `/reviews/courses/${productId}`,
+        {
+          rating,
+          comment: payload?.comment?.trim() || "",
+        }
+      );
+
+      const review =
+        res.data?.data?.review ||
+        res.data?.review ||
+        null;
+
+      return review
+        ? this.normalizeReview(review)
+        : res.data;
+    } catch (error) {
+      console.error(
+        "addOrUpdateReview ERROR:",
+        error.response?.data || error
+      );
+
+      throw error;
+    }
   },
 
-  getCourseReviewStats(courseId) {
-    const reviews = this.getCourseReviews(courseId);
+  async getMyReview(productId) {
+    try {
+      const result = await this.getCourseReviews(
+        productId,
+        1,
+        50
+      );
 
-    if (!reviews.length) {
+      const currentUserId = this.getCurrentUserId();
+
+      if (!currentUserId) {
+        return null;
+      }
+
+      return (
+        result.reviews.find(
+          (item) =>
+            Number(item.userId) === Number(currentUserId)
+        ) || null
+      );
+    } catch (error) {
+      console.error(
+        "getMyReview ERROR:",
+        error.response?.data || error
+      );
+
+      return null;
+    }
+  },
+
+  async getCourseReviewStats(productId) {
+    try {
+      const result = await this.getCourseReviews(
+        productId,
+        1,
+        1
+      );
+
+      const reviews = result.reviews || [];
+
+      if (!reviews.length && !result.total) {
+        return {
+          average: 0,
+          total: 0,
+        };
+      }
+
+      const total =
+        Number(result.total) || reviews.length;
+
+      const totalRating = reviews.reduce(
+        (sum, item) =>
+          sum + Number(item.rating || 0),
+        0
+      );
+
+      return {
+        average:
+          reviews.length > 0
+            ? Number(
+                (totalRating / reviews.length).toFixed(1)
+              )
+            : 0,
+        total,
+      };
+    } catch (error) {
+      console.error(
+        "getProductReviewStats ERROR:",
+        error.response?.data || error
+      );
+
       return {
         average: 0,
         total: 0,
       };
     }
+  },
 
-    const totalRating = reviews.reduce(
-      (sum, item) => sum + Number(item.rating || 0),
-      0
-    );
+  getCurrentUserId() {
+    try {
+      const raw =
+        localStorage.getItem("currentUser") ||
+        sessionStorage.getItem("currentUser");
 
+      if (!raw) {
+        return null;
+      }
+
+      const auth = JSON.parse(raw);
+
+      return (
+        auth?.user?.id ??
+        auth?.user?.user_id ??
+        null
+      );
+    } catch {
+      return null;
+    }
+  },
+
+  normalizeReview(review) {
     return {
-      average: Number((totalRating / reviews.length).toFixed(1)),
-      total: reviews.length,
+      id:
+        review.review_id ??
+        review.id,
+
+      reviewId:
+        review.review_id ??
+        review.id,
+
+      userId:
+        review.user_id ??
+        null,
+
+      userName:
+        review.user_name ||
+        review.user?.name ||
+        "Khách hàng",
+
+      productId:
+        review.product_id ??
+        review.course_id,
+
+      courseId:
+        review.course_id ??
+        review.product_id,
+
+      rating:
+        Number(review.rating || 0),
+
+      comment:
+        review.comment || "",
+
+      createdAt:
+        review.created_at ||
+        null,
+
+      updatedAt:
+        review.updated_at ||
+        null,
     };
   },
 };

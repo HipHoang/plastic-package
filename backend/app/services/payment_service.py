@@ -4,54 +4,220 @@ import urllib.parse
 from datetime import datetime
 
 from app.models.order import Order
+from app.models.course import Course
 from app.configs.db import db
 
+
 class PaymentService:
-    VNP_URL = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+    VNP_URL = (
+        "https://sandbox.vnpayment.vn/"
+        "paymentv2/vpcpay.html"
+    )
+
+    # VNPay Sandbox
     VNP_TMN_CODE = "CPY00001"
     VNP_HASH_SECRET = "9756708451313410"
-    VNP_RETURN_URL = "http://localhost:5000/api/payment/vnpay_return"
+
+    VNP_RETURN_URL = (
+        "http://localhost:5000/"
+        "api/payment/vnpay_return"
+    )
 
     @staticmethod
-    def create_payment_url(user_id, course_id, amount, remote_addr):
-        # 1. Tạo order
+    def create_payment_url(
+        user_id,
+        course_id,
+        quantity=1,
+        customer_name=None,
+        customer_phone=None,
+        customer_email=None,
+        remote_addr=None,
+    ):
+        # =========================
+        # 1. KIỂM TRA USER
+        # =========================
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            raise ValueError(
+                "Tài khoản không hợp lệ"
+            )
+
+        # =========================
+        # 2. KIỂM TRA SẢN PHẨM
+        # =========================
+        try:
+            course_id = int(course_id)
+        except (TypeError, ValueError):
+            raise ValueError(
+                "Mã sản phẩm không hợp lệ"
+            )
+
+        course = Course.query.get(course_id)
+
+        if not course:
+            raise ValueError(
+                "Không tìm thấy sản phẩm"
+            )
+
+        if not course.is_active:
+            raise ValueError(
+                "Sản phẩm hiện đang ngừng bán"
+            )
+
+        # =========================
+        # 3. KIỂM TRA SỐ LƯỢNG
+        # =========================
+        try:
+            quantity = int(quantity)
+        except (TypeError, ValueError):
+            raise ValueError(
+                "Số lượng không hợp lệ"
+            )
+
+        if quantity < 1:
+            raise ValueError(
+                "Số lượng phải lớn hơn 0"
+            )
+
+        min_quantity = int(
+            course.min_order_quantity or 1
+        )
+
+        if quantity < min_quantity:
+            raise ValueError(
+                f"Số lượng tối thiểu là "
+                f"{min_quantity} "
+                f"{course.unit or 'cái'}"
+            )
+
+        # =========================
+        # 4. TÍNH GIÁ
+        # =========================
+        unit_price = float(
+            course.price or 0
+        )
+
+        if unit_price <= 0:
+            raise ValueError(
+                "Sản phẩm chưa có giá bán. "
+                "Vui lòng liên hệ để nhận báo giá."
+            )
+
+        amount = unit_price * quantity
+
+        # =========================
+        # 5. TẠO MÔ TẢ ĐƠN HÀNG
+        # =========================
+        order_desc = (
+            f"Thanh toan san pham "
+            f"{course.title} "
+            f"- SL {quantity}"
+        )
+
+        # =========================
+        # 6. TẠO ORDER
+        # =========================
         new_order = Order(
             user_id=user_id,
             course_id=course_id,
             amount=amount,
-            status='pending',
-            order_desc=f"Thanh toan khoa hoc ID {course_id}"
+            quantity=quantity,
+            status="pending",
+            order_desc=order_desc,
+            payment_method="VNPay",
+            customer_name=(
+                customer_name or ""
+            ).strip(),
+            customer_phone=(
+                customer_phone or ""
+            ).strip(),
+            customer_email=(
+                customer_email or ""
+            ).strip(),
         )
 
         db.session.add(new_order)
         db.session.commit()
 
-        # 2. Params VNPay
+        # =========================
+        # 7. ĐỊA CHỈ IP
+        # =========================
+        ip_address = (
+            remote_addr
+            or "127.0.0.1"
+        )
+
+        # =========================
+        # 8. SỐ TIỀN GỬI VNPAY
+        # =========================
+        # VNPay yêu cầu số tiền x100
+        vnp_amount = int(
+            round(amount * 100)
+        )
+
+        # =========================
+        # 9. TẠO PARAMS
+        # =========================
         vnp_params = {
-            'vnp_Version': '2.1.0',
-            'vnp_Command': 'pay',
-            'vnp_TmnCode': PaymentService.VNP_TMN_CODE,
-            'vnp_Amount': int(float(amount) * 100),
-            'vnp_CurrCode': 'VND',
-            'vnp_TxnRef': str(new_order.id),
-            'vnp_OrderInfo': new_order.order_desc,
-            'vnp_OrderType': 'billpayment',
-            'vnp_Locale': 'vn',
-            'vnp_ReturnUrl': PaymentService.VNP_RETURN_URL,
-            'vnp_IpAddr': remote_addr,
-            'vnp_CreateDate': datetime.now().strftime('%Y%m%d%H%M%S'),
-            'vnp_BankCode': 'NCB',
+            "vnp_Version": "2.1.0",
+            "vnp_Command": "pay",
+            "vnp_TmnCode": (
+                PaymentService.VNP_TMN_CODE
+            ),
+            "vnp_Amount": vnp_amount,
+            "vnp_CurrCode": "VND",
+            "vnp_TxnRef": str(
+                new_order.id
+            ),
+            "vnp_OrderInfo": order_desc,
+            "vnp_OrderType": "billpayment",
+            "vnp_Locale": "vn",
+            "vnp_ReturnUrl": (
+                PaymentService.VNP_RETURN_URL
+            ),
+            "vnp_IpAddr": ip_address,
+            "vnp_CreateDate": (
+                datetime.now().strftime(
+                    "%Y%m%d%H%M%S"
+                )
+            ),
         }
 
-        # 3. Sort + encode
-        input_data = sorted(vnp_params.items())
-        query_string = urllib.parse.urlencode(input_data, quote_via=urllib.parse.quote)
+        # =========================
+        # 10. SORT PARAMS
+        # =========================
+        input_data = sorted(
+            vnp_params.items()
+        )
 
-        # 4. Hash
+        query_string = (
+            urllib.parse.urlencode(
+                input_data,
+                quote_via=urllib.parse.quote
+            )
+        )
+
+        # =========================
+        # 11. TẠO SECURE HASH
+        # =========================
         hash_value = hmac.new(
-            PaymentService.VNP_HASH_SECRET.encode(),
-            query_string.encode(),
+            PaymentService.VNP_HASH_SECRET.encode(
+                "utf-8"
+            ),
+            query_string.encode(
+                "utf-8"
+            ),
             hashlib.sha512
         ).hexdigest()
 
-        return f"{PaymentService.VNP_URL}?{query_string}&vnp_SecureHash={hash_value}"
+        # =========================
+        # 12. TẠO URL THANH TOÁN
+        # =========================
+        payment_url = (
+            f"{PaymentService.VNP_URL}"
+            f"?{query_string}"
+            f"&vnp_SecureHash={hash_value}"
+        )
+
+        return payment_url
