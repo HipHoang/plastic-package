@@ -21,6 +21,7 @@ class Enrollment(db.Model):
         db.ForeignKey("courses.course_id"),
         nullable=False
     )
+    product_id = db.synonym("course_id")
 
     status = db.Column(
         db.String(50),
@@ -45,7 +46,7 @@ class Enrollment(db.Model):
     )
 
     course = db.relationship(
-        "Course",
+        "Product",
         backref="enrolled_users"
     )
 

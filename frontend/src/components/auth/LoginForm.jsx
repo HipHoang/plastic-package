@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import {
   loginApi,
@@ -17,7 +17,6 @@ import { useAuth } from "../../context/AuthProvider";
 const LoginForm = ({ onSwitchType }) => {
   const { setUser } = useAuth();
 
-  const navigate = useNavigate();
   const location = useLocation();
 
   const [loading, setLoading] = useState(false);
@@ -61,8 +60,8 @@ const LoginForm = ({ onSwitchType }) => {
   /*
    * Xác định nơi cần quay lại sau khi đăng nhập.
    *
-   * Nếu LoginForm được mở từ CourseDetail:
-   *   window.location.pathname = /courses/1
+   * Nếu LoginForm được mở từ ProductDetail:
+   *   window.location.pathname = /products/1
    *
    * thì giữ nguyên trang sản phẩm.
    *
@@ -113,7 +112,7 @@ const LoginForm = ({ onSwitchType }) => {
       isTeacherRole(data.user?.role)
     ) {
       window.location.href =
-        "/teacher/dashboard";
+        "/admin/dashboard";
       return;
     }
 
@@ -122,8 +121,8 @@ const LoginForm = ({ onSwitchType }) => {
      * giữ nguyên trang hiện tại.
      *
      * Ví dụ:
-     * /courses/4
-     * sẽ vẫn ở /courses/4.
+     * /products/4
+     * sẽ vẫn ở /products/4.
      */
     const returnPath =
       getReturnPath();

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AuthModal from "../auth/AuthModal";
 import { isStaffRole, isAdminRole } from "../../untils/auth";
 import { useAuth } from "../../context/AuthProvider";
-import { courseService } from "../../services/courseService";
+import { productService } from "../../services/productService";
 import {
   FiSearch,
   FiBell,
@@ -67,7 +67,7 @@ const Header = () => {
     setShowResults(false);
 
     navigate(
-      `/all-courses?q=${encodeURIComponent(keyword)}`
+      `/products?q=${encodeURIComponent(keyword)}`
     );
   };
 
@@ -85,7 +85,7 @@ const Header = () => {
     const delayDebounceFn = setTimeout(async () => {
       try {
         const data =
-          await courseService.searchCourses({
+          await productService.searchProducts({
             q: searchTerm,
             sort_by: "newest",
           });
@@ -164,7 +164,7 @@ const Header = () => {
 
   const getHomePath = () => {
     if (isAdmin || isStaff) {
-      return "/teacher/dashboard";
+      return "/admin/dashboard";
     }
 
     return "/";
@@ -172,7 +172,7 @@ const Header = () => {
 
   const getAccountPath = () => {
     if (isAdmin || isStaff) {
-      return "/teacher/profile";
+      return "/admin/profile";
     }
 
     return "/settings";
@@ -224,7 +224,7 @@ const Header = () => {
 
           <button
             onClick={() =>
-              navigate("/all-courses")
+              navigate("/products")
             }
             className="text-sm font-semibold text-gray-700 hover:text-[#013396] transition"
           >
@@ -233,7 +233,7 @@ const Header = () => {
 
           <button
             onClick={() =>
-              navigate("/all-courses")
+              navigate("/products")
             }
             className="text-sm font-semibold text-gray-700 hover:text-[#013396] transition"
           >
@@ -267,7 +267,7 @@ const Header = () => {
                 if (e.key === "Enter") {
                   if (results.length > 0) {
                     navigate(
-                      `/courses/${results[0].id}`
+                      `/products/${results[0].id}`
                     );
 
                     setShowResults(false);
@@ -329,7 +329,7 @@ const Header = () => {
                             );
 
                             navigate(
-                              `/courses/${item.id}`
+                              `/products/${item.id}`
                             );
                           }}
                           className="px-4 py-3 hover:bg-blue-50 cursor-pointer flex gap-4 items-center group transition-all border-b border-gray-50 last:border-none"
@@ -559,7 +559,7 @@ const Header = () => {
                       onClick={() => {
                         setShowUserMenu(false);
                         navigate(
-                          "/teacher/dashboard"
+                          "/admin/dashboard"
                         );
                       }}
                       className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 transition border-t border-gray-50"

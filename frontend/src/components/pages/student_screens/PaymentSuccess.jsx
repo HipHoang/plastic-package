@@ -73,7 +73,7 @@ const PaymentSuccess = () => {
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={() => navigate("/all-courses")}
+            onClick={() => navigate("/products")}
             className="px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
           >
             ← Tiếp tục xem sản phẩm

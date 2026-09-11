@@ -3,12 +3,12 @@ import apiClient from "../untils/auth";
 export const enrollmentService = {
   /**
    * Kiểm tra khách hàng đã mua sản phẩm chưa
-   * GET /api/courses/{productId}/check-enrollment
+   * GET /api/products/{productId}/check-enrollment
    */
   async checkEnrollment(productId) {
     try {
       const res = await apiClient.get(
-        `/courses/${productId}/check-enrollment`
+        `/products/${productId}/check-order`
       );
 
       return (
@@ -29,16 +29,15 @@ export const enrollmentService = {
 
   /**
    * Đặt mua sản phẩm
-   * POST /api/courses/enroll
+   * POST /api/products/enroll
    *
    * Đây chỉ là API tương thích với backend hiện tại.
    * Thanh toán VNPay thực tế dùng paymentService.
    */
   async enrollCourse(productId) {
     try {
-      const res = await apiClient.post("/courses/enroll", {
+      const res = await apiClient.post("/products/orders", {
         product_id: productId,
-        course_id: productId,
       });
 
       return res.data;
@@ -61,13 +60,13 @@ export const enrollmentService = {
 
   /**
    * Lấy danh sách sản phẩm đã mua
-   * GET /api/courses/my-courses
+   * GET /api/products/my-courses
    *
    * Giữ tên getMyCourses để không làm hỏng component cũ.
    */
   async getMyCourses() {
     try {
-      const res = await apiClient.get("/courses/my-courses");
+      const res = await apiClient.get("/products/my-products");
 
       const products = res.data?.data || [];
 
@@ -79,11 +78,6 @@ export const enrollmentService = {
         productId:
           item.product_id ??
           item.course_id ??
-          item.id,
-
-        courseId:
-          item.course_id ??
-          item.product_id ??
           item.id,
 
         id:

@@ -1,23 +1,29 @@
 import React from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 import Layout from "./components/layout/Layout";
 
-import HomeStudent from "./components/pages/student_screens/HomeStudent";
-import AllCourses from "./components/pages/student_screens/AllCourses";
-import CourseDetail from "./components/pages/student_screens/CourseDetail";
+import Home from "./components/pages/Home";
+import Products from "./components/pages/student_screens/Products";
+import ProductDetail from "./components/pages/student_screens/ProductDetail";
 import OrderHistory from "./components/pages/student_screens/OrderHistory";
 import OrderDetail from "./components/pages/student_screens/OrderDetail";
 import PaymentSuccess from "./components/pages/student_screens/PaymentSuccess";
 import PaymentFailed from "./components/pages/student_screens/PaymentFailed";
 
-import CourseTeacher from "./components/pages/teacher_screens/CourseTeacher";
-import TeacherProfile from "./components/pages/teacher_screens/TeacherProfile";
-import TeacherCourseDetail from "./components/pages/teacher_screens/TeacherCourseDetail";
+import OrderManagement from "./components/pages/teacher_screens/OrderManagement";
+import AdminProfile from "./components/pages/teacher_screens/AdminProfile";
+import OrderDetailAdmin from "./components/pages/teacher_screens/OrderDetailAdmin";
 import ProductManagement from "./components/pages/teacher_screens/ProductManagement";
+import ManagementList from "./components/pages/teacher_screens/ManagementList";
 
-import AIStudent from "./components/pages/student_screens/AIStudent";
+import CustomerAI from "./components/pages/CustomerAI";
 import AIChat from "./components/AIChat";
 import FloatingAIChat from "./components/FloatingAIChat";
 
@@ -31,15 +37,11 @@ function App() {
                 WEBSITE / CUSTOMER
             ========================= */}
 
-            <Route path="/" element={<HomeStudent />} />
+            <Route path="/" element={<Home />} />
 
-            <Route path="/products" element={<AllCourses />} />
+            <Route path="/products" element={<Products />} />
 
-            <Route path="/all-courses" element={<AllCourses />} />
-
-            <Route path="/products/:id" element={<CourseDetail />} />
-
-            <Route path="/courses/:id" element={<CourseDetail />} />
+            <Route path="/products/:id" element={<ProductDetail />} />
 
             {/* =========================
                 CUSTOMER ORDERS
@@ -72,7 +74,7 @@ function App() {
 
             <Route
               path="/ai"
-              element={<AIStudent />}
+              element={<CustomerAI />}
             />
 
             <Route
@@ -108,6 +110,16 @@ function App() {
             />
 
             <Route
+              path="/admin/dashboard"
+              element={<Navigate to="/admin/products" replace />}
+            />
+
+            <Route
+              path="/teacher/dashboard"
+              element={<Navigate to="/admin/products" replace />}
+            />
+
+            <Route
               path="/teacher/products"
               element={<ProductManagement />}
             />
@@ -118,22 +130,12 @@ function App() {
 
             <Route
               path="/admin/orders"
-              element={<CourseTeacher />}
-            />
-
-            <Route
-              path="/teacher/courses"
-              element={<CourseTeacher />}
+              element={<OrderManagement />}
             />
 
             <Route
               path="/admin/orders/:id"
-              element={<TeacherCourseDetail />}
-            />
-
-            <Route
-              path="/teacher/courses/:id"
-              element={<TeacherCourseDetail />}
+              element={<OrderDetailAdmin />}
             />
 
             {/* =========================
@@ -142,30 +144,12 @@ function App() {
 
             <Route
               path="/admin/categories"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Quản lý danh mục sản phẩm
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng quản lý danh mục đang được xây dựng.
-                  </p>
-                </div>
-              }
+              element={<ManagementList resource="categories" />}
             />
 
             <Route
               path="/teacher/categories"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Quản lý danh mục sản phẩm
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng quản lý danh mục đang được xây dựng.
-                  </p>
-                </div>
-              }
+              element={<ManagementList resource="categories" />}
             />
 
             {/* =========================
@@ -174,30 +158,12 @@ function App() {
 
             <Route
               path="/admin/customers"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Quản lý khách hàng
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng quản lý khách hàng đang được xây dựng.
-                  </p>
-                </div>
-              }
+              element={<ManagementList resource="customers" />}
             />
 
             <Route
               path="/teacher/customers"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Quản lý khách hàng
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng quản lý khách hàng đang được xây dựng.
-                  </p>
-                </div>
-              }
+              element={<ManagementList resource="customers" />}
             />
 
             {/* =========================
@@ -270,12 +236,12 @@ function App() {
 
             <Route
               path="/admin/profile"
-              element={<TeacherProfile />}
+              element={<AdminProfile />}
             />
 
             <Route
               path="/teacher/profile"
-              element={<TeacherProfile />}
+              element={<AdminProfile />}
             />
 
             {/* =========================

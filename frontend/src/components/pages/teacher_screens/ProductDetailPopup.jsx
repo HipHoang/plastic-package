@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { FiCheckCircle, FiChevronDown, FiClock, FiMonitor, FiPlayCircle, FiSmartphone, FiStar, FiUser, FiX, FiLayers } from "react-icons/fi";
-import { courseService } from "../../../services/courseService";
+import { productService } from "../../../services/productService";
 
-const CourseDetailPopup = ({ id, onClose }) => {
+const ProductDetailPopup = ({ id, onClose }) => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openChapters, setOpenChapters] = useState({});
@@ -10,7 +10,7 @@ const CourseDetailPopup = ({ id, onClose }) => {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const data = await courseService.getCourseById(id);
+        const data = await productService.getProductById(id);
         setCourse(data);
         const initialState = {};
         data.chapters?.forEach((chapter, index) => {
@@ -95,7 +95,7 @@ const CourseDetailPopup = ({ id, onClose }) => {
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   <div className="bg-white p-4 rounded-2xl text-center shadow-sm">
                     <FiUser className="mx-auto mb-1 text-blue-600" size={16} />
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Học viên</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">Khách hàng</p>
                     <p className="font-black text-slate-800 text-lg">{course.students || 0}</p>
                   </div>
                   <div className="bg-white p-4 rounded-2xl text-center shadow-sm">
@@ -121,4 +121,4 @@ const CourseDetailPopup = ({ id, onClose }) => {
   );
 };
 
-export default CourseDetailPopup;
+export default ProductDetailPopup;

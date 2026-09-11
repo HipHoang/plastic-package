@@ -7,7 +7,7 @@ from flask_jwt_extended import (
 
 from app.models.user import User
 from app.models.order import Order
-from app.models.course import Course
+from app.models.product import Product
 from app.configs.db import db
 from app.utils.response import (
     success_response,
@@ -143,6 +143,60 @@ def update_profile():
         )
 
 
+@user_bp.route("/admin/customers", methods=["GET"])
+@jwt_required()
+def admin_customers():
+    try:
+        user, permission_error = require_admin_or_staff()
+        if permission_error:
+            return permission_error
+
+        customers = (
+            User.query
+            .filter(User.role == "customer")
+            .order_by(User.created_at.desc())
+            .all()
+        )
+        return success_response(
+            data=[customer.to_dict() for customer in customers],
+            message="Lấy danh sách khách hàng thành công",
+            status_code=200,
+        )
+    except Exception as e:
+        return error_response(str(e), 500)
+
+
+@user_bp.route("/admin/customers/<int:customer_id>/status", methods=["PUT"])
+@jwt_required()
+def update_customer_status(customer_id):
+    try:
+        user, permission_error = require_admin_or_staff()
+        if permission_error:
+            return permission_error
+
+        customer = User.query.filter_by(
+            user_id=customer_id,
+            role="customer",
+        ).first()
+        if not customer:
+            return error_response("Không tìm thấy khách hàng", 404)
+
+        data = request.get_json(silent=True) or {}
+        if "is_active" not in data:
+            return error_response("Thiếu trạng thái tài khoản", 400)
+
+        customer.is_active = bool(data.get("is_active"))
+        db.session.commit()
+        return success_response(
+            data=customer.to_dict(),
+            message="Cập nhật trạng thái khách hàng thành công",
+            status_code=200,
+        )
+    except Exception as e:
+        db.session.rollback()
+        return error_response(str(e), 500)
+
+
 # =========================
 # MY ORDERS
 # =========================
@@ -171,7 +225,7 @@ def my_orders():
         for order in orders:
             order_data = order.to_dict()
 
-            product = Course.query.get(
+            product = Product.query.get(
                 order.course_id
             )
 
@@ -239,7 +293,7 @@ def order_detail(order_id):
 
         order_data = order.to_dict()
 
-        product = Course.query.get(
+        product = Product.query.get(
             order.course_id
         )
 
@@ -330,7 +384,7 @@ def admin_orders():
             # -------------------------
             # PRODUCT
             # -------------------------
-            product = Course.query.get(
+            product = Product.query.get(
                 order.course_id
             )
 
@@ -416,7 +470,7 @@ def admin_order_detail(order_id):
         # -------------------------
         # PRODUCT
         # -------------------------
-        product = Course.query.get(
+        product = Product.query.get(
             order.course_id
         )
 

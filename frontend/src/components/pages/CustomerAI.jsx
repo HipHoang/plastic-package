@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiSparkles } from "react-icons/hi2";
 import { FiArrowRight } from "react-icons/fi";
-import { aiService } from '../../../services/aiService';
+import { aiService } from '../../services/aiService';
 
 const mockAISuggestions = []; // Fallback
 
-const AIStudent = () => {
+const CustomerAI = () => {
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState(mockAISuggestions);
   const [loading, setLoading] = useState(true);
@@ -94,7 +94,7 @@ const AIStudent = () => {
               <div>
                 <span className="text-xs font-bold text-blue-600 uppercase tracking-tight">{item.level}</span>
                 <h3 className="text-xl font-bold text-[#021e4b] mt-1">{item.title}</h3>
-                <p className="text-sm text-slate-500 mt-1">Giảng viên: {item.instructor}</p>
+                <p className="text-sm text-slate-500 mt-1">Sản phẩm: {item.title}</p>
               </div>
 
               <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
@@ -104,10 +104,10 @@ const AIStudent = () => {
               </div>
 
               <button 
-                onClick={() => navigate(`/courses/${item.courseId}`)}
+                onClick={() => navigate(`/products/${item.productId}`)}
                 className="w-full flex items-center justify-center gap-2 py-4 bg-[#021e4b] text-white rounded-2xl font-semibold hover:bg-[#0047AB] transition-colors"
               >
-                Xem chi tiết khóa học
+                Xem chi tiết sản phẩm
                 <FiArrowRight />
               </button>
             </div>
@@ -118,5 +118,4 @@ const AIStudent = () => {
   );
 };
 
-export default AIStudent;
-
+export default CustomerAI;

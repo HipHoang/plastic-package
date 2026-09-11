@@ -21,7 +21,7 @@ try:
     # Import các model hiện đang được sử dụng
     from app.models import (
         User,
-        Course,
+        Product,
         ProductCategory,
         Enrollment,
         Payment,

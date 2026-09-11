@@ -8,6 +8,7 @@ from flask_jwt_extended import (
 from app.services.review_service import (
     get_reviews_by_course,
     create_or_update_review,
+    delete_review,
 )
 
 from app.utils.response import (
@@ -25,6 +26,10 @@ review_bp = Blueprint(
 # =========================
 # DANH SÁCH ĐÁNH GIÁ
 # =========================
+@review_bp.route(
+    "/products/<int:course_id>",
+    methods=["GET"]
+)
 @review_bp.route(
     "/courses/<int:course_id>",
     methods=["GET"]
@@ -65,6 +70,10 @@ def get_reviews(course_id):
 # =========================
 # TẠO / CẬP NHẬT ĐÁNH GIÁ
 # =========================
+@review_bp.route(
+    "/products/<int:course_id>",
+    methods=["POST"]
+)
 @review_bp.route(
     "/courses/<int:course_id>",
     methods=["POST"]
@@ -123,3 +132,28 @@ def create_review(course_id):
             str(e),
             500
         )
+
+
+@review_bp.route(
+    "/<int:review_id>",
+    methods=["DELETE"]
+)
+@jwt_required()
+def remove_review(review_id):
+    try:
+        user_id = get_jwt_identity()
+        result, status = delete_review(user_id, review_id)
+
+        if status != 200:
+            return error_response(
+                result.get("error", "Không thể xóa đánh giá"),
+                status
+            )
+
+        return success_response(
+            data=result,
+            message=result.get("message", "Xóa đánh giá thành công"),
+            status_code=200
+        )
+    except Exception as e:
+        return error_response(str(e), 500)

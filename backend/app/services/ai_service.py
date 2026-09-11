@@ -2,7 +2,7 @@ import time
 from flask import current_app
 from google import genai
 from sqlalchemy import or_
-from app.models.course import Course
+from app.models.product import Product
 from app.models.chat_message import ChatMessage
 
 _client = None
@@ -33,17 +33,17 @@ def fallback_reply(message):
 
 def search_courses(keyword):
     if not keyword:
-        return Course.query.limit(5).all()
+        return Product.query.limit(5).all()
 
-    courses = Course.query.filter(
+    courses = Product.query.filter(
         or_(
-            Course.title.ilike(f"%{keyword}%"),
-            Course.description.ilike(f"%{keyword}%")
+            Product.title.ilike(f"%{keyword}%"),
+            Product.description.ilike(f"%{keyword}%")
         )
     ).limit(5).all()
 
     if not courses:
-        courses = Course.query.limit(5).all()
+        courses = Product.query.limit(5).all()
 
     return courses
 
@@ -116,7 +116,7 @@ Rules:
 - If no exact match → suggest popular courses
 - Keep answer natural and helpful
 
-Courses:
+Products:
 {course_text}
 
 User question:
@@ -141,9 +141,9 @@ User question:
 
 def get_course_recommendations(user_id):
     """Temporary data - replace with ML logic later"""
-    from app.models.course import Course
+    from app.models.product import Product
     # Get top 4 courses by rating or random for demo
-    courses = Course.query.order_by(Course.course_id).limit(4).all()
+    courses = Product.query.order_by(Product.course_id).limit(4).all()
     recommendations = []
     for i, course in enumerate(courses, 1):
         recommendations.append({

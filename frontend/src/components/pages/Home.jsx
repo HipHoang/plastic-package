@@ -8,8 +8,8 @@ import {
   FiTruck,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { courseService } from "../../../services/courseService";
-import { getStoredAuth } from "../../../untils/auth";
+import { productService } from "../../services/productService";
+import { getStoredAuth } from "../../untils/auth";
 
 const formatPrice = (price) => {
   const value = Number(price || 0);
@@ -25,7 +25,7 @@ const getProductName = (product) =>
   product?.name || product?.title || "Sản phẩm bao bì";
 
 const getProductId = (product) =>
-  product?.product_id || product?.course_id || product?.id;
+  product?.product_id || product?.product_id || product?.id;
 
 const ProductCard = ({ product, onClick }) => {
   const name = getProductName(product);
@@ -160,7 +160,7 @@ const GuestHome = ({ products, categories, loading }) => {
 
           <div className="flex flex-wrap gap-3 mt-8">
             <button
-              onClick={() => navigate("/all-courses")}
+              onClick={() => navigate("/products")}
               className="bg-white text-[#003B7A] px-6 py-3 rounded-full font-bold hover:bg-blue-50 transition flex items-center gap-2"
             >
               Xem sản phẩm
@@ -240,7 +240,7 @@ const GuestHome = ({ products, categories, loading }) => {
           </div>
 
           <button
-            onClick={() => navigate("/all-courses")}
+            onClick={() => navigate("/products")}
             className="hidden sm:flex items-center gap-1 text-[#0047AB] text-sm font-semibold hover:underline"
           >
             Xem tất cả
@@ -263,7 +263,7 @@ const GuestHome = ({ products, categories, loading }) => {
                 key={getProductId(product)}
                 product={product}
                 onClick={() =>
-                  navigate(`/courses/${getProductId(product)}`)
+                  navigate(`/products/${getProductId(product)}`)
                 }
               />
             ))}
@@ -284,7 +284,7 @@ const GuestHome = ({ products, categories, loading }) => {
           </div>
 
           <button
-            onClick={() => navigate("/all-courses")}
+            onClick={() => navigate("/products")}
             className="hidden sm:flex items-center gap-1 text-[#0047AB] text-sm font-semibold hover:underline"
           >
             Xem tất cả
@@ -301,7 +301,7 @@ const GuestHome = ({ products, categories, loading }) => {
                 description={category.description}
                 onClick={() =>
                   navigate(
-                    `/all-courses?category_id=${
+                    `/products?category_id=${
                       category.id || category.category_id
                     }`
                   )
@@ -316,7 +316,7 @@ const GuestHome = ({ products, categories, loading }) => {
                 key={item}
                 title={item}
                 onClick={() =>
-                  navigate(`/all-courses?q=${encodeURIComponent(item)}`)
+                  navigate(`/products?q=${encodeURIComponent(item)}`)
                 }
               />
             ))}
@@ -346,7 +346,7 @@ const GuestHome = ({ products, categories, loading }) => {
   );
 };
 
-const UserHome = ({ currentUser, products, categories, loading }) => {
+const UserHome = ({ currentUser, products, loading }) => {
   const navigate = useNavigate();
 
   const firstName =
@@ -372,7 +372,7 @@ const UserHome = ({ currentUser, products, categories, loading }) => {
         </p>
 
         <button
-          onClick={() => navigate("/all-courses")}
+          onClick={() => navigate("/products")}
           className="mt-6 bg-white text-[#003B7A] px-6 py-3 rounded-full font-bold hover:bg-blue-50 transition flex items-center gap-2"
         >
           Xem sản phẩm
@@ -392,7 +392,7 @@ const UserHome = ({ currentUser, products, categories, loading }) => {
           </div>
 
           <button
-            onClick={() => navigate("/all-courses")}
+            onClick={() => navigate("/products")}
             className="flex items-center gap-1 text-[#0047AB] text-sm font-semibold"
           >
             Xem tất cả
@@ -411,7 +411,7 @@ const UserHome = ({ currentUser, products, categories, loading }) => {
                 key={getProductId(product)}
                 product={product}
                 onClick={() =>
-                  navigate(`/courses/${getProductId(product)}`)
+                  navigate(`/products/${getProductId(product)}`)
                 }
               />
             ))}
@@ -466,9 +466,9 @@ const HomeStudent = () => {
     const fetchData = async () => {
       try {
         const [productData, categoryData] = await Promise.all([
-          courseService.getAllCourses(),
-          courseService.getCategories
-            ? courseService.getCategories()
+          productService.getProducts(),
+          productService.getCategories
+            ? productService.getCategories()
             : Promise.resolve([]),
         ]);
 

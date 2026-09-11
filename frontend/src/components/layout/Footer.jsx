@@ -92,7 +92,7 @@ const Footer = () => {
 
               <li>
                 <a
-                  href="/all-courses"
+                  href="/products"
                   className="hover:text-blue-400 transition"
                 >
                   Sản phẩm
@@ -101,7 +101,7 @@ const Footer = () => {
 
               <li>
                 <a
-                  href="/all-courses"
+                  href="/products"
                   className="hover:text-blue-400 transition"
                 >
                   Danh mục sản phẩm
@@ -128,7 +128,7 @@ const Footer = () => {
             <ul className="space-y-3 text-slate-300">
               <li>
                 <a
-                  href="/all-courses?q=PE"
+                  href="/products?q=PE"
                   className="hover:text-blue-400 transition"
                 >
                   Túi PE
@@ -137,7 +137,7 @@ const Footer = () => {
 
               <li>
                 <a
-                  href="/all-courses?q=PP"
+                  href="/products?q=PP"
                   className="hover:text-blue-400 transition"
                 >
                   Túi PP
@@ -146,7 +146,7 @@ const Footer = () => {
 
               <li>
                 <a
-                  href="/all-courses?q=HDPE"
+                  href="/products?q=HDPE"
                   className="hover:text-blue-400 transition"
                 >
                   Túi HDPE
@@ -155,7 +155,7 @@ const Footer = () => {
 
               <li>
                 <a
-                  href="/all-courses?q=rác"
+                  href="/products?q=rác"
                   className="hover:text-blue-400 transition"
                 >
                   Túi rác

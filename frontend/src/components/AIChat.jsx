@@ -133,7 +133,7 @@ export default function AIChat() {
         <div>
           <h2 className="font-semibold text-slate-800">AI Assistant</h2>
           <p className="text-sm text-gray-400">
-            Hỗ trợ học tập & gợi ý khóa học
+            Hỗ trợ sản phẩm & tư vấn bao bì
           </p>
         </div>
       </div>
@@ -219,4 +219,3 @@ export default function AIChat() {
     </div>
   );
 }
-

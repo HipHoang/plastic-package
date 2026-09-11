@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { FiLayers, FiTag, FiUploadCloud, FiX } from "react-icons/fi";
-import { courseService } from "../../../services/courseService";
-import { getAccessToken, getCurrentUserId } from "../../../untils/auth";
+import { productService } from "../../../services/productService";
 const SelectField = ({ label, icon, name, options, onChange, value }) => (
     <div className="space-y-3">
         <label className="block text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -34,7 +33,7 @@ const SelectField = ({ label, icon, name, options, onChange, value }) => (
     </div>
 );
 
-const CreateCourseForm = ({ onClose }) => {
+const CreateProductForm = ({ onClose }) => {
     const [formData, setFormData] = useState({
         title: "",
         category: "",
@@ -99,15 +98,15 @@ const CreateCourseForm = ({ onClose }) => {
         }
 
         try {
-            const res = await courseService.createCourse(data);
+            const res = await productService.createProduct(data);
 
             if (res) {
-                alert("Tạo khóa học thành công!");
+                alert("Tạo sản phẩm thành công!");
                 onClose();
             }
         } catch (error) {
-            console.error("Lỗi khi tạo khóa học:", error);
-            alert(error.message || "Có lỗi xảy ra khi tạo khóa học!");
+            console.error("Lỗi khi tạo sản phẩm:", error);
+            alert(error.message || "Có lỗi xảy ra khi tạo sản phẩm!");
         }
     };
 
@@ -121,7 +120,7 @@ const CreateCourseForm = ({ onClose }) => {
                 <div className="sticky top-0 bg-white px-8 py-6 border-b border-gray-100 flex items-center justify-center z-10 relative">
                     {/* Phần tiêu đề nằm giữa */}
                     <div className="text-center">
-                        <h2 className="text-2xl font-bold text-slate-800">Tạo khóa học mới</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">Tạo sản phẩm mới</h2>
                         <p className="text-slate-500 text-sm">Điền đầy đủ thông tin để bắt đầu xuất bản nội dung</p>
                     </div>
 
@@ -138,7 +137,7 @@ const CreateCourseForm = ({ onClose }) => {
                     {/* Section 1: Thông tin cơ bản */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4 md:col-span-2">
-                            <label className="block text-sm font-bold text-slate-700">Tiêu đề khóa học *</label>
+                            <label className="block text-sm font-bold text-slate-700">Tên sản phẩm *</label>
                             <input
                                 type="text"
                                 name="title"
@@ -171,7 +170,7 @@ const CreateCourseForm = ({ onClose }) => {
 
                     {/* Section 2: Hình ảnh Thumbnail */}
                     <div className="space-y-4">
-                        <label className="block text-sm font-bold text-slate-700">Hình ảnh khóa học (Thumbnail)</label>
+                        <label className="block text-sm font-bold text-slate-700">Hình ảnh sản phẩm</label>
                         <div className="flex flex-col md:flex-row gap-6 items-start">
                             <div
                                 className="w-full md:w-64 h-40 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition cursor-pointer relative overflow-hidden"
@@ -226,7 +225,7 @@ const CreateCourseForm = ({ onClose }) => {
                                 className="w-5 h-5 rounded-md accent-[#0B5CFF]"
                                 onChange={handleChange}
                             />
-                            <label htmlFor="is_free" className="text-sm font-bold text-slate-700">Khóa học Miễn phí</label>
+                            <label htmlFor="is_free" className="text-sm font-bold text-slate-700">Sản phẩm liên hệ báo giá</label>
                         </div>
                     </div>
 
@@ -238,7 +237,7 @@ const CreateCourseForm = ({ onClose }) => {
                                 name="short_description"
                                 rows="2"
                                 className="w-full px-5 py-3 rounded-2xl border border-gray-200 outline-none focus:border-[#0B5CFF]"
-                                placeholder="Tóm tắt khóa học trong 1-2 câu..."
+                                placeholder="Mô tả sản phẩm trong 1-2 câu..."
                                 onChange={handleChange}
                             ></textarea>
                         </div>
@@ -267,7 +266,7 @@ const CreateCourseForm = ({ onClose }) => {
                             type="submit"
                             className="px-10 py-3 rounded-2xl font-bold bg-[#0B5CFF] text-white hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
                         >
-                            Tạo khóa học
+                            Tạo sản phẩm
                         </button>
                     </div>
                 </form>
@@ -276,4 +275,4 @@ const CreateCourseForm = ({ onClose }) => {
     );
 };
 
-export default CreateCourseForm;
+export default CreateProductForm;

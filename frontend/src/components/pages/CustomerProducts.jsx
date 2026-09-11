@@ -8,9 +8,9 @@ import {
   FiSearch,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { getAccessToken } from "../../../untils/auth";
+import { getAccessToken } from "../../untils/auth";
 
-const CourseStudent = () => {
+const CustomerProducts = () => {
   const navigate = useNavigate();
 
   const [courses, setCourses] = useState([]);
@@ -30,7 +30,7 @@ const CourseStudent = () => {
         }
 
         const res = await axios.get(
-          "http://127.0.0.1:5000/api/courses/my-courses",
+          "http://127.0.0.1:5000/api/products/my-courses",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -42,7 +42,7 @@ const CourseStudent = () => {
 
         // Defensive mapping
         const normalized = (res.data || []).map((c) => ({
-          courseId: c.id,
+          productId: c.id,
           title: c.title || "",
           image: c.image || "",
           progress: c.progress_percent || 0,
@@ -95,7 +95,7 @@ const CourseStudent = () => {
   if (loading) {
     return (
       <div className="bg-white rounded-[28px] border border-gray-100 p-8">
-        Đang tải khóa học...
+        Đang tải sản phẩm...
       </div>
     );
   }
@@ -106,10 +106,10 @@ const CourseStudent = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">
-            Khóa học của tôi
+            Sản phẩm đã mua
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Bạn đã đăng ký {courses.length} khóa học
+            Bạn đã mua {courses.length} sản phẩm
           </p>
         </div>
 
@@ -118,7 +118,7 @@ const CourseStudent = () => {
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Tìm khóa học..."
+              placeholder="Tìm sản phẩm..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#002B5B] w-64"
@@ -168,24 +168,24 @@ const CourseStudent = () => {
       {filteredCourses.length === 0 ? (
         <div className="bg-white rounded-[28px] border border-gray-100 p-10 text-center">
           <h3 className="text-xl font-bold text-slate-800 mb-2">
-            Chưa có khóa học nào
+            Chưa có sản phẩm nào
           </h3>
           <p className="text-slate-500 mb-6">
-            Hãy đăng ký một khóa học để bắt đầu hành trình học tập của bạn.
+            Hãy mua sản phẩm để bắt đầu đặt hàng.
           </p>
           <button
-            onClick={() => navigate("/all-courses")}
+            onClick={() => navigate("/products")}
             className="px-6 py-3 rounded-full bg-[#002B5B] text-white font-semibold hover:bg-[#001E3C] transition"
           >
-            Khám phá khóa học
+            Khám phá sản phẩm
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCourses.map((course) => (
             <div
-              key={course.courseId}
-              onClick={() => navigate(`/learn/${course.courseId}`)}
+              key={course.productId}
+              onClick={() => navigate(`/learn/${course.productId}`)}
               className="bg-white rounded-[28px] border border-gray-100 overflow-hidden hover:shadow-xl transition-all group cursor-pointer"
             >
               {/* Image */}
@@ -275,7 +275,7 @@ const CourseStudent = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/learn/${course.courseId}`);
+                      navigate(`/learn/${course.productId}`);
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 transition ${course.progress === 100
                         ? "bg-green-50 text-green-600 hover:bg-green-100"
@@ -300,4 +300,4 @@ const CourseStudent = () => {
   );
 };
 
-export default CourseStudent;
+export default CustomerProducts;

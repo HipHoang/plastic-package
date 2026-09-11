@@ -14,7 +14,7 @@ import {
   FiCheckCircle,
   FiTruck,
 } from "react-icons/fi";
-import teacherCourseService from "../../../services/teacherCourseService";
+import adminService from "../../../services/adminService";
 
 const statusLabels = {
   pending: "Chờ xử lý",
@@ -162,7 +162,7 @@ function InfoRow({ icon: Icon, label, children }) {
   return (
     <div className="flex items-start gap-3">
       <div className="mt-0.5 shrink-0 rounded-lg bg-gray-100 p-2 text-gray-500">
-        <Icon size={16} />
+        {React.createElement(Icon, { size: 16 })}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -175,7 +175,7 @@ function InfoRow({ icon: Icon, label, children }) {
   );
 }
 
-export default function TeacherCourseDetail() {
+export default function OrderDetailAdmin() {
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -199,7 +199,7 @@ export default function TeacherCourseDetail() {
       setSuccessMessage("");
 
       const response =
-        await teacherCourseService.getAdminOrderDetail(id);
+        await adminService.getAdminOrderDetail(id);
 
       const data =
         response?.order ||
@@ -247,7 +247,7 @@ export default function TeacherCourseDetail() {
       setSuccessMessage("");
 
       const response =
-        await teacherCourseService.updateOrderStatus(
+        await adminService.updateOrderStatus(
           getOrderId(order),
           status
         );
@@ -303,7 +303,7 @@ export default function TeacherCourseDetail() {
         <div className="mx-auto max-w-7xl">
           <button
             type="button"
-            onClick={() => navigate("/teacher/courses")}
+            onClick={() => navigate("/admin/orders")}
             className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600"
           >
             <FiArrowLeft size={17} />
@@ -349,7 +349,7 @@ export default function TeacherCourseDetail() {
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
-            onClick={() => navigate("/teacher/courses")}
+            onClick={() => navigate("/admin/orders")}
             className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-600 transition hover:text-blue-600"
           >
             <FiArrowLeft size={18} />

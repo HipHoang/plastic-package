@@ -12,21 +12,21 @@ const saveAllQuestions = (data) => {
 };
 
 export const qaService = {
-  getCourseQuestions(courseId) {
+  getCourseQuestions(productId) {
     const all = getAllQuestions();
-    return all[courseId] || [];
+    return all[productId] || [];
   },
 
-  askQuestion(courseId, question) {
+  askQuestion(productId, question) {
     const currentUser = getCurrentUser();
     if (!currentUser) throw new Error("USER_NOT_LOGGED_IN");
 
     const all = getAllQuestions();
-    const courseQuestions = all[courseId] || [];
+    const courseQuestions = all[productId] || [];
 
     const newQuestion = {
       id: Date.now(),
-      courseId: Number(courseId),
+      productId: Number(productId),
       userId: currentUser.id,
       userName: currentUser.name,
       question: question.trim(),
@@ -34,24 +34,24 @@ export const qaService = {
       createdAt: new Date().toISOString(),
     };
 
-    all[courseId] = [newQuestion, ...courseQuestions];
+    all[productId] = [newQuestion, ...courseQuestions];
     saveAllQuestions(all);
 
     return newQuestion;
   },
 
-  answerQuestion(courseId, questionId, answer) {
+  answerQuestion(productId, questionId, answer) {
     const currentUser = getCurrentUser();
     const all = getAllQuestions();
-    const courseQuestions = all[courseId] || [];
+    const courseQuestions = all[productId] || [];
 
-    all[courseId] = courseQuestions.map((item) =>
+    all[productId] = courseQuestions.map((item) =>
       Number(item.id) === Number(questionId)
         ? {
             ...item,
             answer: {
               text: answer.trim(),
-              answeredBy: currentUser?.name || "Giảng viên",
+              answeredBy: currentUser?.name || "Nhân viên",
               answeredAt: new Date().toISOString(),
             },
           }

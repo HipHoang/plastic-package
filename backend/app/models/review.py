@@ -21,6 +21,7 @@ class Review(db.Model):
         db.ForeignKey("courses.course_id"),
         nullable=False
     )
+    product_id = db.synonym("course_id")
 
     rating = db.Column(
         db.Integer,
@@ -51,7 +52,7 @@ class Review(db.Model):
     )
 
     course = db.relationship(
-        "Course",
+        "Product",
         backref="reviews",
         lazy=True
     )

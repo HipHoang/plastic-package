@@ -1,21 +1,21 @@
 import apiClient from "../untils/auth";
 
-const teacherCourseService = {
+const adminService = {
   // =========================
   // DASHBOARD
   // =========================
-  async getTeacherCourses() {
-    const response = await apiClient.get("/courses/instructor");
+  async getStaffProducts() {
+    const response = await apiClient.get("/products/staff/products");
     return response.data;
   },
 
-  async getTeacherCourseStats() {
-    const response = await apiClient.get("/courses/instructor/stats");
+  async getStaffProductStats() {
+    const response = await apiClient.get("/products/staff/stats");
     return response.data;
   },
 
-  async getTeacherStats() {
-    const response = await apiClient.get("/courses/instructor/stats");
+  async getStaffStats() {
+    const response = await apiClient.get("/products/staff/stats");
     return response.data;
   },
 
@@ -23,20 +23,20 @@ const teacherCourseService = {
   // ADMIN PRODUCTS
   // =========================
   async getAdminProducts() {
-    const response = await apiClient.get("/courses/admin/products");
+    const response = await apiClient.get("/products/admin/products");
     return response.data;
   },
 
   async getAdminProductDetail(productId) {
     const response = await apiClient.get(
-      `/courses/admin/products/${productId}`
+      `/products/admin/products/${productId}`
     );
     return response.data;
   },
 
   async createProduct(formData) {
     const response = await apiClient.post(
-      "/courses/admin/products",
+      "/products/admin/products",
       formData,
       {
         headers: {
@@ -50,7 +50,7 @@ const teacherCourseService = {
 
   async updateProduct(productId, formData) {
     const response = await apiClient.put(
-      `/courses/admin/products/${productId}`,
+      `/products/admin/products/${productId}`,
       formData,
       {
         headers: {
@@ -64,39 +64,14 @@ const teacherCourseService = {
 
   async deleteProduct(productId) {
     const response = await apiClient.delete(
-      `/courses/admin/products/${productId}`
+      `/products/admin/products/${productId}`
     );
 
     return response.data;
   },
 
-  // =========================
-  // LEGACY COURSE METHODS
-  // =========================
-  async getCourseDetail(courseId) {
-    const response = await apiClient.get(`/courses/${courseId}`);
-    return response.data;
-  },
-
-  async createCourse(payload) {
-    const response = await apiClient.post("/courses", payload);
-    return response.data;
-  },
-
-  async updateCourse(courseId, payload) {
-    const response = await apiClient.put(
-      `/courses/${courseId}`,
-      payload
-    );
-
-    return response.data;
-  },
-
-  async deleteCourse(courseId) {
-    const response = await apiClient.delete(
-      `/courses/${courseId}`
-    );
-
+  async getProductDetail(productId) {
+    const response = await apiClient.get(`/products/${productId}`);
     return response.data;
   },
 
@@ -129,6 +104,6 @@ const teacherCourseService = {
   },
 };
 
-export { teacherCourseService };
+export { adminService };
 
-export default teacherCourseService;
+export default adminService;
