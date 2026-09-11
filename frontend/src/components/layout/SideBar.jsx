@@ -22,12 +22,12 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
     {
       name: "Sản phẩm",
       icon: <FiPackage />,
-      path: "/all-courses",
+      path: "/products",
     },
     {
       name: "Danh mục sản phẩm",
       icon: <FiGrid />,
-      path: "/all-courses",
+      path: "/products",
     },
     {
       name: "Đơn hàng của tôi",

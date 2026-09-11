@@ -21,6 +21,7 @@ class Order(db.Model):
         db.ForeignKey("courses.course_id"),
         nullable=False
     )
+    product_id = db.synonym("course_id")
 
     amount = db.Column(
         db.Float,
@@ -105,4 +106,3 @@ class Order(db.Model):
                 else None
             ),
         }
-

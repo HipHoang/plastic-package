@@ -21,6 +21,7 @@ class Post(db.Model):
         db.ForeignKey("courses.course_id"),
         nullable=True
     )
+    product_id = db.synonym("course_id")
 
     title = db.Column(
         db.String(255),

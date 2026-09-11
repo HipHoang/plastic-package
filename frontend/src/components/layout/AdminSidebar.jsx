@@ -14,61 +14,61 @@ import {
 } from "react-icons/fi";
 import { NavLink } from "react-router-dom";
 
-const TeacherSidebar = ({ isExpanded, setIsExpanded }) => {
+const AdminSidebar = ({ isExpanded, setIsExpanded }) => {
   const menuItems = [
     {
       name: "Tổng quan",
       icon: <FiHome />,
       path: "/admin/dashboard",
-      fallbackPath: "/teacher/dashboard",
+      fallbackPath: "/admin/dashboard",
     },
     {
       name: "Sản phẩm",
       icon: <FiPackage />,
       path: "/admin/products",
-      fallbackPath: "/teacher/products",
+      fallbackPath: "/admin/products",
     },
     {
       name: "Danh mục",
       icon: <FiGrid />,
       path: "/admin/categories",
-      fallbackPath: "/teacher/categories",
+      fallbackPath: "/admin/categories",
     },
     {
       name: "Đơn hàng",
       icon: <FiShoppingBag />,
       path: "/admin/orders",
-      fallbackPath: "/teacher/courses",
+      fallbackPath: "/admin/orders",
     },
     {
       name: "Khách hàng",
       icon: <FiUsers />,
       path: "/admin/customers",
-      fallbackPath: "/teacher/customers",
+      fallbackPath: "/admin/customers",
     },
     {
       name: "Tin tức",
       icon: <FiFileText />,
       path: "/admin/news",
-      fallbackPath: "/teacher/news",
+      fallbackPath: "/admin/news",
     },
     {
       name: "Đánh giá",
       icon: <FiMessageCircle />,
       path: "/admin/reviews",
-      fallbackPath: "/teacher/reviews",
+      fallbackPath: "/admin/reviews",
     },
     {
       name: "Hồ sơ",
       icon: <FiUser />,
       path: "/admin/profile",
-      fallbackPath: "/teacher/profile",
+      fallbackPath: "/admin/profile",
     },
     {
       name: "Cài đặt",
       icon: <FiSettings />,
       path: "/admin/settings",
-      fallbackPath: "/teacher/settings",
+      fallbackPath: "/admin/settings",
     },
   ];
 
@@ -121,4 +121,4 @@ const TeacherSidebar = ({ isExpanded, setIsExpanded }) => {
   );
 };
 
-export default TeacherSidebar;
+export default AdminSidebar;

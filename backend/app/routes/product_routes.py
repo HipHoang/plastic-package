@@ -1,14 +1,14 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from app.services.course_service import (
-    CourseService,
-    get_course_detail_service,
-    get_course_user,
-    enroll_course_service,
-    check_enrollment_status,
-    get_teacher_courses,
-    get_teacher_stats,
+from app.services.product_service import (
+    ProductService,
+    get_product_detail_service,
+    get_customer_products,
+    enroll_product_service,
+    check_order_status,
+    get_staff_products,
+    get_staff_stats,
     get_admin_products,
 )
 from app.models.user import User, UserRole
@@ -16,7 +16,7 @@ from app.models.product_category import ProductCategory
 from app.utils.response import success_response, error_response
 
 
-course_bp = Blueprint("course_bp", __name__)
+product_bp = Blueprint("product_bp", __name__)
 
 
 def require_admin_or_staff():
@@ -42,7 +42,7 @@ def require_admin_or_staff():
 # =========================
 # PRODUCT CATEGORIES
 # =========================
-@course_bp.route("/product-categories", methods=["GET"])
+@product_bp.route("/product-categories", methods=["GET"])
 def get_product_categories():
     try:
         categories = ProductCategory.query.filter_by(
@@ -62,7 +62,7 @@ def get_product_categories():
 # =========================
 # ADMIN PRODUCT CATEGORIES
 # =========================
-@course_bp.route("/admin/product-categories", methods=["GET"])
+@product_bp.route("/admin/product-categories", methods=["GET"])
 @jwt_required()
 def admin_product_categories():
     try:
@@ -85,13 +85,87 @@ def admin_product_categories():
         return error_response(str(e), 500)
 
 
+@product_bp.route("/admin/product-categories", methods=["POST"])
+@jwt_required()
+def create_product_category():
+    try:
+        user, error = require_admin_or_staff()
+        if error:
+            return error
+
+        data = request.get_json(silent=True) or {}
+        name = str(data.get("name", "")).strip()
+        if not name:
+            return error_response("Tên danh mục không được để trống", 400)
+
+        category = ProductCategory(
+            name=name,
+            description=data.get("description"),
+            image=data.get("image"),
+            is_active=bool(data.get("is_active", True)),
+        )
+        from app.configs.db import db
+        db.session.add(category)
+        db.session.commit()
+
+        return success_response(
+            data=category.to_dict(),
+            message="Tạo danh mục thành công",
+            status_code=201,
+        )
+    except Exception as e:
+        from app.configs.db import db
+        db.session.rollback()
+        return error_response(str(e), 500)
+
+
+@product_bp.route("/admin/product-categories/<int:category_id>", methods=["PUT", "DELETE"])
+@jwt_required()
+def manage_product_category(category_id):
+    try:
+        user, error = require_admin_or_staff()
+        if error:
+            return error
+
+        category = ProductCategory.query.get(category_id)
+        if not category:
+            return error_response("Không tìm thấy danh mục", 404)
+
+        if request.method == "DELETE":
+            category.is_active = False
+        else:
+            data = request.get_json(silent=True) or {}
+            if "name" in data:
+                name = str(data.get("name", "")).strip()
+                if not name:
+                    return error_response("Tên danh mục không được để trống", 400)
+                category.name = name
+            for field in ["description", "image"]:
+                if field in data:
+                    setattr(category, field, data.get(field))
+            if "is_active" in data:
+                category.is_active = bool(data.get("is_active"))
+
+        from app.configs.db import db
+        db.session.commit()
+        return success_response(
+            data=category.to_dict(),
+            message="Cập nhật danh mục thành công",
+            status_code=200,
+        )
+    except Exception as e:
+        from app.configs.db import db
+        db.session.rollback()
+        return error_response(str(e), 500)
+
+
 # =========================
 # SEARCH PRODUCTS
 # =========================
-@course_bp.route("/search", methods=["GET"])
+@product_bp.route("/search", methods=["GET"])
 def search():
     try:
-        data = CourseService.search_and_sort_courses(
+        data = ProductService.search_and_sort_products(
             page=request.args.get("page", 1, type=int),
             size=min(request.args.get("size", 10, type=int), 50),
             keyword=request.args.get("q"),
@@ -101,6 +175,9 @@ def search():
             min_price=request.args.get("min_price", type=float),
             max_price=request.args.get("max_price", type=float),
             rating=request.args.get("rating", type=float),
+            material=request.args.get("material"),
+            color=request.args.get("color"),
+            category_id=request.args.get("category_id", type=int),
             is_free=request.args.get(
                 "is_free",
                 type=lambda v: v.lower() == "true" if v else None
@@ -120,13 +197,13 @@ def search():
 # =========================
 # GET ALL PRODUCTS
 # =========================
-@course_bp.route("/", methods=["GET"])
+@product_bp.route("/", methods=["GET"])
 def get_courses():
     try:
         page = request.args.get("page", 1, type=int)
         size = min(request.args.get("size", 10, type=int), 50)
 
-        data = CourseService.search_and_sort_courses(
+        data = ProductService.search_and_sort_products(
             page=page,
             size=size,
             keyword=request.args.get("q"),
@@ -136,6 +213,9 @@ def get_courses():
             min_price=request.args.get("min_price", type=float),
             max_price=request.args.get("max_price", type=float),
             rating=request.args.get("rating", type=float),
+            material=request.args.get("material"),
+            color=request.args.get("color"),
+            category_id=request.args.get("category_id", type=int),
             is_free=request.args.get(
                 "is_free",
                 type=lambda v: v.lower() == "true" if v else None
@@ -155,10 +235,10 @@ def get_courses():
 # =========================
 # GET PRODUCT DETAIL
 # =========================
-@course_bp.route("/<int:course_id>", methods=["GET"])
-def get_course_detail(course_id):
+@product_bp.route("/<int:product_id>", methods=["GET"])
+def get_product_detail(product_id):
     try:
-        data = get_course_detail_service(course_id)
+        data = get_product_detail_service(product_id)
 
         if not data:
             return error_response(
@@ -179,13 +259,13 @@ def get_course_detail(course_id):
 # =========================
 # CUSTOMER PURCHASES
 # =========================
-@course_bp.route("/my-courses", methods=["GET"])
+@product_bp.route("/my-products", methods=["GET"])
 @jwt_required()
-def get_my_courses():
+def get_my_products():
     try:
         user_id = get_jwt_identity()
 
-        data = get_course_user(int(user_id))
+        data = get_customer_products(int(user_id))
 
         return success_response(
             data=data,
@@ -200,9 +280,9 @@ def get_my_courses():
 # =========================
 # CREATE BASIC ORDER
 # =========================
-@course_bp.route("/enroll", methods=["POST", "OPTIONS"])
+@product_bp.route("/orders", methods=["POST", "OPTIONS"])
 @jwt_required()
-def enroll_course():
+def create_product_order():
     if request.method == "OPTIONS":
         return "", 200
 
@@ -210,17 +290,17 @@ def enroll_course():
         user_id = get_jwt_identity()
         data = request.get_json(silent=True) or {}
 
-        course_id = data.get("course_id") or data.get("product_id")
+        product_id = data.get("product_id") or data.get("course_id")
 
-        if not course_id:
+        if not product_id:
             return error_response(
                 "Thiếu product_id/course_id",
                 400
             )
 
-        result, status = enroll_course_service(
+        result, status = enroll_product_service(
             int(user_id),
-            int(course_id)
+            int(product_id)
         )
 
         return success_response(
@@ -236,12 +316,12 @@ def enroll_course():
 # =========================
 # CHECK PURCHASE STATUS
 # =========================
-@course_bp.route(
-    "/<int:course_id>/check-enrollment",
+@product_bp.route(
+    "/<int:product_id>/check-order",
     methods=["GET"]
 )
 @jwt_required(optional=True)
-def check_enrollment(course_id):
+def check_product_order(product_id):
     try:
         user_id = get_jwt_identity()
 
@@ -252,9 +332,9 @@ def check_enrollment(course_id):
                 status_code=200,
             )
 
-        is_enrolled = check_enrollment_status(
+        is_enrolled = check_order_status(
             int(user_id),
-            course_id
+            product_id
         )
 
         return success_response(
@@ -273,7 +353,7 @@ def check_enrollment(course_id):
 # =========================
 # ADMIN PRODUCT LIST
 # =========================
-@course_bp.route("/admin/products", methods=["GET"])
+@product_bp.route("/admin/products", methods=["GET"])
 @jwt_required()
 def admin_products():
     try:
@@ -297,19 +377,19 @@ def admin_products():
 # =========================
 # ADMIN PRODUCT DETAIL
 # =========================
-@course_bp.route(
-    "/admin/products/<int:course_id>",
+@product_bp.route(
+    "/admin/products/<int:product_id>",
     methods=["GET"]
 )
 @jwt_required()
-def admin_product_detail(course_id):
+def admin_product_detail(product_id):
     try:
         user, error = require_admin_or_staff()
 
         if error:
             return error
 
-        data = get_course_detail_service(course_id)
+        data = get_product_detail_service(product_id)
 
         if not data:
             return error_response(
@@ -330,7 +410,7 @@ def admin_product_detail(course_id):
 # =========================
 # ADMIN CREATE PRODUCT
 # =========================
-@course_bp.route(
+@product_bp.route(
     "/admin/products",
     methods=["POST", "OPTIONS"]
 )
@@ -348,14 +428,14 @@ def admin_create_product():
         data = request.form.to_dict()
         image_file = request.files.get("image")
 
-        new_course = CourseService.add_new_course(
+        new_product = ProductService.add_new_product(
             user.user_id,
             data,
             image_file
         )
 
         return success_response(
-            data=new_course.to_dict(),
+            data=new_product.to_dict(),
             message="Tạo sản phẩm thành công",
             status_code=201,
         )
@@ -367,12 +447,12 @@ def admin_create_product():
 # =========================
 # ADMIN UPDATE PRODUCT
 # =========================
-@course_bp.route(
-    "/admin/products/<int:course_id>",
+@product_bp.route(
+    "/admin/products/<int:product_id>",
     methods=["PUT", "POST", "OPTIONS"]
 )
 @jwt_required()
-def admin_update_product(course_id):
+def admin_update_product(product_id):
     if request.method == "OPTIONS":
         return "", 200
 
@@ -391,20 +471,20 @@ def admin_update_product(course_id):
             data = request.get_json(silent=True) or {}
             image_file = None
 
-        course = CourseService.update_course(
-            course_id,
+        product = ProductService.update_product(
+            product_id,
             data,
             image_file
         )
 
-        if not course:
+        if not product:
             return error_response(
                 "Không tìm thấy sản phẩm",
                 404
             )
 
         return success_response(
-            data=course.to_dict(),
+            data=product.to_dict(),
             message="Cập nhật sản phẩm thành công",
             status_code=200,
         )
@@ -416,12 +496,12 @@ def admin_update_product(course_id):
 # =========================
 # ADMIN DELETE PRODUCT
 # =========================
-@course_bp.route(
-    "/admin/products/<int:course_id>",
+@product_bp.route(
+    "/admin/products/<int:product_id>",
     methods=["DELETE", "OPTIONS"]
 )
 @jwt_required()
-def admin_delete_product(course_id):
+def admin_delete_product(product_id):
     if request.method == "OPTIONS":
         return "", 200
 
@@ -431,16 +511,16 @@ def admin_delete_product(course_id):
         if error:
             return error
 
-        course = CourseService.deactivate_course(course_id)
+        product = ProductService.deactivate_product(product_id)
 
-        if not course:
+        if not product:
             return error_response(
                 "Không tìm thấy sản phẩm",
                 404
             )
 
         return success_response(
-            data=course.to_dict(),
+            data=product.to_dict(),
             message="Đã ngừng bán sản phẩm",
             status_code=200,
         )
@@ -452,13 +532,17 @@ def admin_delete_product(course_id):
 # =========================
 # LEGACY ADMIN PRODUCT LIST
 # =========================
-@course_bp.route("/instructor", methods=["GET"])
+@product_bp.route("/staff/products", methods=["GET"])
 @jwt_required()
-def get_instructor_courses():
+def get_staff_product_list():
     try:
+        user, error = require_admin_or_staff()
+        if error:
+            return error
+
         user_id = get_jwt_identity()
 
-        data = get_teacher_courses(int(user_id))
+        data = get_staff_products(int(user_id))
 
         return success_response(
             data=data,
@@ -473,13 +557,17 @@ def get_instructor_courses():
 # =========================
 # ADMIN STATISTICS
 # =========================
-@course_bp.route("/instructor/stats", methods=["GET"])
+@product_bp.route("/staff/stats", methods=["GET"])
 @jwt_required()
-def get_instructor_stats():
+def get_staff_product_stats():
     try:
+        user, error = require_admin_or_staff()
+        if error:
+            return error
+
         user_id = get_jwt_identity()
 
-        data = get_teacher_stats(int(user_id))
+        data = get_staff_stats(int(user_id))
 
         return success_response(
             data=data,
@@ -494,7 +582,7 @@ def get_instructor_stats():
 # =========================
 # LEGACY CREATE PRODUCT
 # =========================
-@course_bp.route("/", methods=["POST", "OPTIONS"])
+@product_bp.route("/", methods=["POST", "OPTIONS"])
 @jwt_required()
 def add_course():
     if request.method == "OPTIONS":
@@ -509,17 +597,21 @@ def add_course():
                 401
             )
 
+        user, error = require_admin_or_staff()
+        if error:
+            return error
+
         data = request.form.to_dict()
         image_file = request.files.get("image")
 
-        new_course = CourseService.add_new_course(
+        new_product = ProductService.add_new_product(
             instructor_id,
             data,
             image_file
         )
 
         return success_response(
-            data=new_course.to_dict(),
+            data=new_product.to_dict(),
             message="Tạo sản phẩm thành công",
             status_code=201,
         )

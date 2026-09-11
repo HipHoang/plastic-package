@@ -28,6 +28,10 @@ post_bp = Blueprint(
 # TẠO BÀI VIẾT
 # =========================
 @post_bp.route(
+    "/products/<int:course_id>",
+    methods=["POST"]
+)
+@post_bp.route(
     "/courses/<int:course_id>",
     methods=["POST"]
 )
@@ -77,6 +81,10 @@ def create_post_api(course_id):
 # =========================
 # DANH SÁCH BÀI VIẾT
 # =========================
+@post_bp.route(
+    "/products/<int:course_id>",
+    methods=["GET"]
+)
 @post_bp.route(
     "/courses/<int:course_id>",
     methods=["GET"]

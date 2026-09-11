@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { verifyTokenApi } from "../services/authService";
 import { getAccessToken } from "../untils/auth";
@@ -23,7 +24,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await verifyTokenApi();
         setUser(response.data);
-      } catch (error) {
+      } catch {
         clearStoredAuth();
       } finally {
         setLoading(false);

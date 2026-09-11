@@ -7,8 +7,8 @@ import {
   FiStar,
   FiUsers,
 } from "react-icons/fi";
-import CreateCourseForm from "../form/CreateCourseForm";
-import { teacherCourseService } from "../../../services/teacherCourseService";
+import CreateProductForm from "../form/CreateProductForm";
+import { adminService } from "../../../services/adminService";
 
 const formatNumber = (num) => {
   if (!num && num !== 0) return "0";
@@ -23,7 +23,7 @@ const formatPrice = (price) => {
   }).format(price);
 };
 
-const TeacherDashboard = () => {
+const AdminDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [stats, setStats] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -35,8 +35,8 @@ const TeacherDashboard = () => {
       try {
         setLoading(true);
         const [coursesData, statsData] = await Promise.all([
-          teacherCourseService.getTeacherCourses(),
-          teacherCourseService.getTeacherStats(),
+          adminService.getStaffProducts(),
+          adminService.getStaffStats(),
         ]);
 
         // Compute total lessons per course (if API doesn't provide it)
@@ -50,12 +50,12 @@ const TeacherDashboard = () => {
         if (statsData) {
           setStats([
             {
-              title: "Khóa học",
+              title: "Sản phẩm",
               value: String(statsData.total_courses ?? 0),
               icon: <FiBookOpen size={22} />,
             },
             {
-              title: "Học viên",
+              title: "Khách hàng",
               value: formatNumber(statsData.total_students),
               icon: <FiUsers size={22} />,
             },
@@ -119,13 +119,13 @@ const TeacherDashboard = () => {
             className="inline-flex items-center gap-2 bg-[#0B5CFF] hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-semibold shadow-md transition"
           >
             <FiPlus />
-            Tạo khóa học
+            Tạo sản phẩm
           </button>
         </div>
       </div>
 
       {isModalOpen && (
-        <CreateCourseForm onClose={() => setIsModalOpen(false)} />
+        <CreateProductForm onClose={() => setIsModalOpen(false)} />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -189,7 +189,7 @@ const TeacherDashboard = () => {
 
       <div className="bg-white rounded-[28px] border border-gray-100 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-800">Khóa học của tôi</h2>
+          <h2 className="text-2xl font-bold text-slate-800">Sản phẩm của tôi</h2>
           <button className="text-[#0B5CFF] font-medium hover:underline">
             Xem tất cả
           </button>
@@ -197,15 +197,15 @@ const TeacherDashboard = () => {
 
         {courses.length === 0 ? (
           <div className="text-center py-10 text-slate-500">
-            <p>Bạn chưa có khóa học nào</p>
+            <p>Bạn chưa có sản phẩm nào</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-190">
               <thead>
                 <tr className="bg-slate-50 text-slate-600 text-left">
-                  <th className="px-5 py-4 rounded-l-2xl font-semibold">Khóa học</th>
-                  <th className="px-5 py-4 font-semibold">Học viên</th>
+                  <th className="px-5 py-4 rounded-l-2xl font-semibold">Sản phẩm</th>
+                  <th className="px-5 py-4 font-semibold">Đơn hàng</th>
                   <th className="px-5 py-4 font-semibold">Giá</th>
                   <th className="px-5 py-4 font-semibold">Trạng thái</th>
                   <th className="px-5 py-4 rounded-r-2xl font-semibold">Bài học</th>
@@ -243,5 +243,4 @@ const TeacherDashboard = () => {
   );
 };
 
-export default TeacherDashboard;
-
+export default AdminDashboard;

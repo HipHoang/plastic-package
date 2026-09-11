@@ -1,13 +1,13 @@
 import React from "react";
 
-const TeacherProfile = () => {
+const AdminProfile = () => {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const user = currentUser?.user || currentUser;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-800">Hồ sơ giảng viên</h1>
+        <h1 className="text-3xl font-bold text-slate-800">Hồ sơ quản trị</h1>
         <p className="text-slate-500 mt-2">
           Thông tin cá nhân và tài khoản của bạn
         </p>
@@ -37,7 +37,7 @@ const TeacherProfile = () => {
             <div>
               <p className="text-sm text-slate-500">Vai trò</p>
               <p className="text-lg font-semibold text-slate-800">
-                {user?.role || "teacher"}
+                {user?.role || "staff"}
               </p>
             </div>
           </div>
@@ -47,4 +47,4 @@ const TeacherProfile = () => {
   );
 };
 
-export default TeacherProfile;
+export default AdminProfile;

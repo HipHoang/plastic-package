@@ -1,3 +1,7 @@
+import hashlib
+import hmac
+import urllib.parse
+
 from flask import Blueprint, request, jsonify, redirect
 from flask_jwt_extended import (
     verify_jwt_in_request,
@@ -7,7 +11,7 @@ from flask_jwt_extended import (
 from app.services.payment_service import PaymentService
 from app.models.enrollment import Enrollment, Payment
 from app.models.order import Order
-from app.models.course import Course
+from app.models.product import Product
 from app.configs.db import db
 
 
@@ -38,7 +42,7 @@ def validate_order_data(data):
             "Mã sản phẩm không hợp lệ"
         )
 
-    product = Course.query.get(product_id)
+    product = Product.query.get(product_id)
 
     if not product:
         raise ValueError(
@@ -433,6 +437,26 @@ def create_cod_order():
 def vnpay_return():
     vnp_params = request.args.to_dict()
 
+    secure_hash = vnp_params.pop("vnp_SecureHash", None)
+    vnp_params.pop("vnp_SecureHashType", None)
+    if not secure_hash or not PaymentService.VNP_HASH_SECRET:
+        return "Invalid payment signature", 400
+
+    query_string = urllib.parse.urlencode(
+        sorted(vnp_params.items()),
+        quote_via=urllib.parse.quote,
+    )
+    expected_hash = hmac.new(
+        PaymentService.VNP_HASH_SECRET.encode("utf-8"),
+        query_string.encode("utf-8"),
+        hashlib.sha512,
+    ).hexdigest()
+    if not hmac.compare_digest(
+        expected_hash.lower(),
+        secure_hash.lower(),
+    ):
+        return "Invalid payment signature", 400
+
     order_id = vnp_params.get(
         "vnp_TxnRef"
     )
@@ -453,6 +477,15 @@ def vnpay_return():
 
     if not order:
         return "Order not found", 404
+
+    try:
+        returned_amount = int(vnp_params.get("vnp_Amount", "0"))
+    except ValueError:
+        return "Invalid payment amount", 400
+
+    expected_amount = int(round(float(order.amount) * 100))
+    if returned_amount != expected_amount:
+        return "Invalid payment amount", 400
 
     # =========================
     # VNPAY THÀNH CÔNG
@@ -584,4 +617,3 @@ def vnpay_return():
         f"?course_id={order.course_id}"
         "&method=vnpay"
     )
-

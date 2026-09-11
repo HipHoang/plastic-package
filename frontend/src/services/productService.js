@@ -1,9 +1,9 @@
 import apiClient from "../untils/auth";
 
-export const courseService = {
-  async getAllCourses() {
+export const productService = {
+  async getProducts() {
     try {
-      const res = await apiClient.get("/courses/");
+      const res = await apiClient.get("/products/");
       const raw = res.data;
       const products = raw?.data?.results || [];
 
@@ -23,7 +23,7 @@ export const courseService = {
 
   async createProduct(productData) {
     try {
-      const res = await apiClient.post("/courses/", productData, {
+      const res = await apiClient.post("/products/", productData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -39,14 +39,9 @@ export const courseService = {
     }
   },
 
-  // Giữ createCourse để các component cũ chưa đổi tên vẫn hoạt động
-  async createCourse(courseData) {
-    return this.createProduct(courseData);
-  },
-
   async getProductById(id) {
     try {
-      const res = await apiClient.get(`/courses/${id}`);
+      const res = await apiClient.get(`/products/${id}`);
       const product = res.data?.data;
 
       if (!product) {
@@ -61,11 +56,6 @@ export const courseService = {
       );
       return null;
     }
-  },
-
-  // Giữ getCourseById để tương thích với component cũ
-  async getCourseById(id) {
-    return this.getProductById(id);
   },
 
   async searchProductsPaged(params = {}) {
@@ -83,7 +73,7 @@ export const courseService = {
       });
 
       const res = await apiClient.get(
-        `/courses/search?${query.toString()}`
+        `/products/search?${query.toString()}`
       );
 
       const raw = res.data?.data || {};
@@ -110,14 +100,9 @@ export const courseService = {
     }
   },
 
-  // Giữ tên cũ để component hiện tại không bị lỗi
-  async searchCoursesPaged(params = {}) {
-    return this.searchProductsPaged(params);
-  },
-
   async searchProducts(params = {}) {
     try {
-      const response = await apiClient.get("/courses/search", {
+      const response = await apiClient.get("/products/search", {
         params,
       });
 
@@ -135,9 +120,9 @@ export const courseService = {
     }
   },
 
-  // Giữ tên cũ để tương thích
-  async searchCourses(params = {}) {
-    return this.searchProducts(params);
+  async getCategories() {
+    const response = await apiClient.get("/products/product-categories");
+    return response.data?.data || [];
   },
 
   normalizeProduct(product) {
@@ -273,8 +258,4 @@ export const courseService = {
     };
   },
 
-  // Tương thích với code cũ
-  normalizeCourse(course) {
-    return this.normalizeProduct(course);
-  },
 };

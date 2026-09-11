@@ -3,11 +3,11 @@ import apiClient from "../untils/auth";
 export const lessonService = {
   /**
    * Get all lessons for a course
-   * GET /api/lessons/course/<course_id>
+   * GET /api/lessons/course/<product_id>
    */
-  async getLessonsByCourse(courseId) {
+  async getLessonsByCourse(productId) {
     try {
-      const res = await apiClient.get(`/lessons/course/${courseId}`);
+      const res = await apiClient.get(`/lessons/course/${productId}`);
       return res.data?.data || [];
     } catch (error) {
       console.error("getLessonsByCourse ERROR:", error.response?.data || error);
@@ -73,14 +73,14 @@ export const lessonService = {
 
   /**
    * Get course detail with lessons
-   * GET /api/courses/<course_id>/detail-with-lessons
+   * GET /api/products/<product_id>/detail-with-lessons
    */
-  async getCourseDetailWithLessons(courseId) {
+  async getProductDetailWithLessons(productId) {
     try {
-      const res = await apiClient.get(`/courses/${courseId}/detail-with-lessons`);
+      const res = await apiClient.get(`/products/${productId}/detail-with-lessons`);
       return res.data?.data || { course: null, lessons: [] };
     } catch (error) {
-     console.error("getCourseDetailWithLessons ERROR:", error.response?.data || error);
+     console.error("getProductDetailWithLessons ERROR:", error.response?.data || error);
     return { course: null, lessons: [] };
   }
 },

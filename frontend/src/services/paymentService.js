@@ -8,9 +8,7 @@ export const paymentService = {
     try {
       const productId =
         payload?.productId ??
-        payload?.product_id ??
-        payload?.courseId ??
-        payload?.course_id;
+        payload?.product_id;
 
       if (!productId) {
         throw new Error("Thiếu mã sản phẩm");
@@ -33,7 +31,6 @@ export const paymentService = {
         "/payment/checkout",
         {
           product_id: Number(productId),
-          course_id: Number(productId),
           quantity,
 
           customer_name:
@@ -93,9 +90,7 @@ export const paymentService = {
     try {
       const productId =
         payload?.productId ??
-        payload?.product_id ??
-        payload?.courseId ??
-        payload?.course_id;
+        payload?.product_id;
 
       if (!productId) {
         throw new Error(
@@ -120,7 +115,6 @@ export const paymentService = {
         "/payment/cod",
         {
           product_id: Number(productId),
-          course_id: Number(productId),
           quantity,
 
           customer_name:
@@ -175,7 +169,7 @@ export const paymentService = {
   async getMyPayments() {
     try {
       const response = await apiClient.get(
-        "/courses/my-courses"
+        "/products/my-products"
       );
 
       return (
@@ -197,7 +191,7 @@ export const paymentService = {
   async hasPaidCourse(productId) {
     try {
       const response = await apiClient.get(
-        `/courses/${productId}/check-enrollment`
+        `/products/${productId}/check-order`
       );
 
       return (

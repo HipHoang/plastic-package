@@ -11,7 +11,7 @@ import {
   FiCreditCard,
   FiCalendar,
 } from "react-icons/fi";
-import teacherCourseService from "../../../services/teacherCourseService";
+import adminService from "../../../services/adminService";
 
 const statusLabels = {
   pending: "Chờ xử lý",
@@ -105,7 +105,7 @@ function getPaymentMethod(order) {
   return method;
 }
 
-export default function CourseTeacher() {
+export default function OrderManagement() {
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
@@ -125,7 +125,7 @@ export default function CourseTeacher() {
 
       setError("");
 
-      const response = await teacherCourseService.getAdminOrders();
+      const response = await adminService.getAdminOrders();
 
       const data = Array.isArray(response)
         ? response
@@ -473,7 +473,7 @@ export default function CourseTeacher() {
                         type="button"
                         onClick={() =>
                           navigate(
-                            `/teacher/courses/${getOrderId(order)}`
+                            `/admin/orders/${getOrderId(order)}`
                           )
                         }
                         className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.98]"

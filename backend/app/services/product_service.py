@@ -1,13 +1,13 @@
-from app.models import Course, Enrollment, Review
+from app.models import Product, Enrollment, Review
 from sqlalchemy import asc, desc, func
 from app.configs.db import db
 from app.services.cloudinary_service import upload_image
 
 
-class CourseService:
+class ProductService:
 
     @staticmethod
-    def search_and_sort_courses(
+    def search_and_sort_products(
         page=1,
         size=10,
         keyword=None,
@@ -18,6 +18,9 @@ class CourseService:
         max_price=None,
         rating=None,
         is_free=None,
+        material=None,
+        color=None,
+        category_id=None,
         order=None,
         **kwargs
     ):
@@ -36,63 +39,78 @@ class CourseService:
 
         query = (
             db.session.query(
-                Course,
+                Product,
                 avg_rating,
                 total_reviews
             )
             .outerjoin(
                 Review,
-                Course.course_id == Review.course_id
+                Product.course_id == Review.course_id
             )
             .filter(
-                Course.is_active.is_(True),
-                Course.is_published.is_(True)
+                Product.is_active.is_(True),
+                Product.is_published.is_(True)
             )
-            .group_by(Course.course_id)
+            .group_by(Product.course_id)
         )
 
         if keyword:
             search = f"%{keyword}%"
 
             query = query.filter(
-                (Course.title.ilike(search))
-                | (Course.description.ilike(search))
-                | (Course.material.ilike(search))
-                | (Course.color.ilike(search))
-                | (Course.printing.ilike(search))
-                | (Course.usage.ilike(search))
+                (Product.title.ilike(search))
+                | (Product.description.ilike(search))
+                | (Product.material.ilike(search))
+                | (Product.color.ilike(search))
+                | (Product.printing.ilike(search))
+                | (Product.usage.ilike(search))
             )
 
         if category:
             query = query.filter(
-                Course.category.ilike(
+                Product.category.ilike(
                     f"%{category}%"
                 )
             )
 
+        if category_id is not None:
+            query = query.filter(
+                Product.category_id == int(category_id)
+            )
+
+        if material:
+            query = query.filter(
+                Product.material.ilike(f"%{material}%")
+            )
+
+        if color:
+            query = query.filter(
+                Product.color.ilike(f"%{color}%")
+            )
+
         if level:
             query = query.filter(
-                Course.level == level
+                Product.level == level
             )
 
         if min_price is not None:
             query = query.filter(
-                Course.price >= float(min_price)
+                Product.price >= float(min_price)
             )
 
         if max_price is not None:
             query = query.filter(
-                Course.price <= float(max_price)
+                Product.price <= float(max_price)
             )
 
         if is_free is True:
             query = query.filter(
-                Course.price == 0
+                Product.price == 0
             )
 
         elif is_free is False:
             query = query.filter(
-                Course.price > 0
+                Product.price > 0
             )
 
         if rating is not None:
@@ -102,12 +120,12 @@ class CourseService:
 
         if sort_by == "price_asc":
             query = query.order_by(
-                asc(Course.price)
+                asc(Product.price)
             )
 
         elif sort_by == "price_desc":
             query = query.order_by(
-                desc(Course.price)
+                desc(Product.price)
             )
 
         elif sort_by == "most_popular":
@@ -122,12 +140,12 @@ class CourseService:
 
         elif sort_by == "oldest":
             query = query.order_by(
-                asc(Course.course_id)
+                asc(Product.course_id)
             )
 
         else:
             query = query.order_by(
-                desc(Course.course_id)
+                desc(Product.course_id)
             )
 
         total = query.count()
@@ -170,7 +188,7 @@ class CourseService:
     # CREATE PRODUCT
     # =========================
     @staticmethod
-    def add_new_course(
+    def add_new_product(
         instructor_id,
         data,
         image_file=None
@@ -221,7 +239,7 @@ class CourseService:
         except (ValueError, TypeError):
             category_id = None
 
-        new_course = Course(
+        new_course = Product(
             title=data.get("title", ""),
             description=data.get(
                 "description",
@@ -256,12 +274,12 @@ class CourseService:
     # UPDATE PRODUCT
     # =========================
     @staticmethod
-    def update_course(
+    def update_product(
         course_id,
         data,
         image_file=None
     ):
-        course = Course.query.get(course_id)
+        course = Product.query.get(course_id)
 
         if not course:
             return None
@@ -354,8 +372,8 @@ class CourseService:
     # DELETE / DEACTIVATE
     # =========================
     @staticmethod
-    def deactivate_course(course_id):
-        course = Course.query.get(course_id)
+    def deactivate_product(course_id):
+        course = Product.query.get(course_id)
 
         if not course:
             return None
@@ -371,13 +389,13 @@ class CourseService:
 # =========================
 # LEGACY COMPATIBILITY
 # =========================
-def get_courses_service(
+def get_products_service(
     page=1,
     size=10,
     keyword=None,
     sort="course_id"
 ):
-    return CourseService.search_and_sort_courses(
+    return ProductService.search_and_sort_products(
         page=page,
         size=size,
         keyword=keyword,
@@ -392,8 +410,8 @@ def get_courses_service(
 # =========================
 # PRODUCT DETAIL
 # =========================
-def get_course_detail_service(course_id):
-    course = Course.query.get(course_id)
+def get_product_detail_service(course_id):
+    course = Product.query.get(course_id)
 
     if not course:
         return None
@@ -445,7 +463,7 @@ def get_course_detail_service(course_id):
 # =========================
 # USER ORDERS / PURCHASES
 # =========================
-def get_course_user(user_id):
+def get_customer_products(user_id):
     enrollments = (
         Enrollment.query
         .filter_by(user_id=user_id)
@@ -484,7 +502,7 @@ def get_course_user(user_id):
 # =========================
 # LEGACY ORDER / PURCHASE
 # =========================
-def enroll_course_service(
+def enroll_product_service(
     user_id,
     course_id
 ):
@@ -502,7 +520,7 @@ def enroll_course_service(
             "message": "Sản phẩm đã được mua"
         }, 200
 
-    course = Course.query.get(course_id)
+    course = Product.query.get(course_id)
 
     if not course:
         return {
@@ -523,7 +541,7 @@ def enroll_course_service(
     }, 200
 
 
-def check_enrollment_status(
+def check_order_status(
     user_id,
     course_id
 ):
@@ -544,9 +562,9 @@ def check_enrollment_status(
 # =========================
 def get_admin_products():
     courses = (
-        Course.query
+        Product.query
         .order_by(
-            Course.course_id.desc()
+            Product.course_id.desc()
         )
         .all()
     )
@@ -612,12 +630,12 @@ def get_admin_products():
 # =========================
 # LEGACY ADMIN PRODUCT LIST
 # =========================
-def get_teacher_courses(user_id):
+def get_staff_products(user_id):
     courses = (
-        Course.query
+        Product.query
         .filter_by(instructor_id=user_id)
         .order_by(
-            Course.course_id.desc()
+            Product.course_id.desc()
         )
         .all()
     )
@@ -662,9 +680,9 @@ def get_teacher_courses(user_id):
 # =========================
 # ADMIN STATISTICS
 # =========================
-def get_teacher_stats(user_id):
+def get_staff_stats(user_id):
     courses = (
-        Course.query
+        Product.query
         .filter_by(instructor_id=user_id)
         .all()
     )

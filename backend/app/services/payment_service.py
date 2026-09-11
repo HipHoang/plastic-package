@@ -1,10 +1,11 @@
 import hashlib
 import hmac
+import os
 import urllib.parse
 from datetime import datetime
 
 from app.models.order import Order
-from app.models.course import Course
+from app.models.product import Product
 from app.configs.db import db
 
 
@@ -15,12 +16,12 @@ class PaymentService:
     )
 
     # VNPay Sandbox
-    VNP_TMN_CODE = "CPY00001"
-    VNP_HASH_SECRET = "9756708451313410"
+    VNP_TMN_CODE = os.getenv("VNP_TMN_CODE")
+    VNP_HASH_SECRET = os.getenv("VNP_HASH_SECRET")
 
-    VNP_RETURN_URL = (
-        "http://localhost:5000/"
-        "api/payment/vnpay_return"
+    VNP_RETURN_URL = os.getenv(
+        "VNP_RETURN_URL",
+        "http://localhost:5000/api/payment/vnpay_return",
     )
 
     @staticmethod
@@ -33,6 +34,11 @@ class PaymentService:
         customer_email=None,
         remote_addr=None,
     ):
+        if not PaymentService.VNP_TMN_CODE or not PaymentService.VNP_HASH_SECRET:
+            raise RuntimeError(
+                "VNPay configuration is missing"
+            )
+
         # =========================
         # 1. KIỂM TRA USER
         # =========================
@@ -53,7 +59,7 @@ class PaymentService:
                 "Mã sản phẩm không hợp lệ"
             )
 
-        course = Course.query.get(course_id)
+        course = Product.query.get(course_id)
 
         if not course:
             raise ValueError(

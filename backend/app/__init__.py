@@ -34,7 +34,7 @@ def create_app():
     # =========================
     from app.routes.auth_routes import auth_bp
     from app.routes.user_routes import user_bp
-    from app.routes.course_routes import course_bp
+    from app.routes.product_routes import product_bp
     from app.routes.payment_routes import payment_bp
     from app.routes.review_routes import review_bp
     from app.routes.post_routes import post_bp
@@ -52,8 +52,15 @@ def create_app():
     )
 
     app.register_blueprint(
-        course_bp,
-        url_prefix="/api/courses"
+        product_bp,
+        url_prefix="/api/products"
+    )
+
+    # Keep the legacy prefix available while clients migrate to products.
+    app.register_blueprint(
+        product_bp,
+        url_prefix="/api/courses",
+        name="legacy_product_bp"
     )
 
     app.register_blueprint(

@@ -1,10 +1,10 @@
 import apiClient from "../untils/auth";
 
 export const reviewService = {
-  async getCourseReviews(courseId, page = 1, size = 10) {
+  async getCourseReviews(productId, page = 1, size = 10) {
     try {
       const res = await apiClient.get(
-        `/reviews/courses/${courseId}`,
+        `/reviews/products/${productId}`,
         {
           params: {
             page,
@@ -50,7 +50,7 @@ export const reviewService = {
       }
 
       const res = await apiClient.post(
-        `/reviews/courses/${productId}`,
+        `/reviews/products/${productId}`,
         {
           rating,
           comment: payload?.comment?.trim() || "",
@@ -73,6 +73,11 @@ export const reviewService = {
 
       throw error;
     }
+  },
+
+  async deleteReview(reviewId) {
+    const response = await apiClient.delete(`/reviews/${reviewId}`);
+    return response.data;
   },
 
   async getMyReview(productId) {
@@ -197,10 +202,6 @@ export const reviewService = {
       productId:
         review.product_id ??
         review.course_id,
-
-      courseId:
-        review.course_id ??
-        review.product_id,
 
       rating:
         Number(review.rating || 0),

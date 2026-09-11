@@ -6,7 +6,7 @@ import {
   FiSearch,
 } from "react-icons/fi";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { courseService } from "../../../services/courseService";
+import { productService } from "../../../services/productService";
 
 const formatPrice = (price) => {
   const value = Number(price || 0);
@@ -19,12 +19,12 @@ const formatPrice = (price) => {
 };
 
 const getProductId = (product) =>
-  product?.product_id || product?.course_id || product?.id;
+  product?.product_id || product?.product_id || product?.id;
 
 const getProductName = (product) =>
   product?.name || product?.title || "Sản phẩm bao bì";
 
-const AllCourses = () => {
+const Products = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -82,7 +82,7 @@ const AllCourses = () => {
           params.category_id = categoryIdFromUrl;
         }
 
-        const response = await courseService.searchProductsPaged(params);
+        const response = await productService.searchProductsPaged(params);
 
         setProducts(
           Array.isArray(response?.results)
@@ -304,7 +304,7 @@ const AllCourses = () => {
           </p>
 
           <button
-            onClick={() => navigate("/all-courses")}
+            onClick={() => navigate("/products")}
             className="mt-5 px-5 py-2.5 rounded-full bg-[#0047AB] text-white text-sm font-semibold hover:bg-[#00357D] transition"
           >
             Xem tất cả sản phẩm
@@ -322,7 +322,7 @@ const AllCourses = () => {
             return (
               <div
                 key={productId}
-                onClick={() => navigate(`/courses/${productId}`)}
+                onClick={() => navigate(`/products/${productId}`)}
                 className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
               >
                 {/* IMAGE */}
@@ -420,4 +420,4 @@ const AllCourses = () => {
   );
 };
 
-export default AllCourses;
+export default Products;

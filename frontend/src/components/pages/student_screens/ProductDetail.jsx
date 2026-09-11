@@ -15,7 +15,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { courseService } from "../../../services/courseService";
+import { productService } from "../../../services/productService";
 import { paymentService } from "../../../services/paymentService";
 import { reviewService } from "../../../services/reviewService";
 import { enrollmentService } from "../../../services/enrollmentService";
@@ -31,7 +31,7 @@ const formatPrice = (price) => {
   return `${value.toLocaleString("vi-VN")} VNĐ`;
 };
 
-const CourseDetail = () => {
+const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -120,14 +120,15 @@ const CourseDetail = () => {
 
       const reviewList = Array.isArray(result)
         ? result
-        : result?.items ||
+        : result?.reviews ||
+          result?.items ||
           result?.data ||
           [];
 
       setReviews(reviewList);
 
       if (reviewList.length > 0) {
-        const total = reviewList.length;
+        const total = Number(result?.total) || reviewList.length;
 
         const average =
           reviewList.reduce(
@@ -196,7 +197,7 @@ const CourseDetail = () => {
         setLoading(true);
 
         const data =
-          await courseService.getProductById(
+          await productService.getProductById(
             id
           );
 
@@ -208,7 +209,9 @@ const CourseDetail = () => {
         setProduct(data);
 
         const minQuantity = Number(
-          data.min_order_quantity || 1
+          data.minOrderQuantity ||
+            data.min_order_quantity ||
+            1
         );
 
         setQuantity(minQuantity);
@@ -234,7 +237,7 @@ const CourseDetail = () => {
         const productId =
           data.id ||
           data.product_id ||
-          data.course_id ||
+          data.product_id ||
           id;
 
         await loadReviewData(
@@ -274,11 +277,13 @@ const CourseDetail = () => {
   const productId =
     product?.id ||
     product?.product_id ||
-    product?.course_id ||
+    product?.product_id ||
     id;
 
   const minQuantity = Number(
-    product?.min_order_quantity || 1
+    product?.minOrderQuantity ||
+      product?.min_order_quantity ||
+      1
   );
 
   const unit =
@@ -486,7 +491,7 @@ const CourseDetail = () => {
         );
 
         navigate(
-          `/payment-success?course_id=${productId}&method=cod`
+          `/payment-success?product_id=${productId}&method=cod`
         );
       } catch (error) {
         console.error(
@@ -672,7 +677,7 @@ const CourseDetail = () => {
         <button
           onClick={() =>
             navigate(
-              "/all-courses"
+              "/products"
             )
           }
           className="px-5 py-3 rounded-xl bg-[#002B5B] text-white font-semibold"
@@ -1905,4 +1910,4 @@ const CourseDetail = () => {
   );
 };
 
-export default CourseDetail;
+export default ProductDetail;

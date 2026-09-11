@@ -38,7 +38,7 @@ class ProductCategory(db.Model):
     )
 
     products = db.relationship(
-        "Course",
+        "Product",
         backref="product_category",
         lazy=True
     )

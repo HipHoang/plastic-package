@@ -1,5 +1,5 @@
 from .user import User
-from .course import Course
+from .product import Product
 from .product_category import ProductCategory
 from .enrollment import Enrollment, Payment
 from .order import Order
@@ -10,7 +10,7 @@ from .chat import Conversation, ConversationUser, Message
 
 __all__ = [
     "User",
-    "Course",
+    "Product",
     "ProductCategory",
     "Enrollment",
     "Payment",

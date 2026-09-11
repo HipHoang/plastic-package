@@ -2,10 +2,11 @@ from app.configs.db import db
 from datetime import datetime
 
 
-class Course(db.Model):
+class Product(db.Model):
     __tablename__ = "courses"
 
     course_id = db.Column(db.Integer, primary_key=True)
+    product_id = db.synonym("course_id")
 
     # =========================
     # PRODUCT BASIC INFO
@@ -92,7 +93,7 @@ class Course(db.Model):
     # =========================
     instructor = db.relationship(
         "User",
-        backref="courses"
+        backref="products"
     )
 
     # Không còn phụ thuộc Lesson

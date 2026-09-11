@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import teacherCourseService from "../../../services/teacherCourseService";
+import adminService from "../../../services/adminService";
 import apiClient from "../../../untils/auth";
 
 const emptyForm = {
@@ -50,7 +50,7 @@ const ProductManagement = () => {
     try {
       setLoading(true);
 
-      const response = await teacherCourseService.getAdminProducts();
+      const response = await adminService.getAdminProducts();
 
       let productList = [];
 
@@ -82,7 +82,7 @@ const ProductManagement = () => {
   const loadCategories = async () => {
     try {
       const response = await apiClient.get(
-        "/courses/product-categories"
+        "/products/product-categories"
       );
 
       let categoryList = [];
@@ -276,18 +276,18 @@ const ProductManagement = () => {
 
       if (editingProduct) {
         const productId =
-          editingProduct.course_id ||
+          editingProduct.product_id ||
           editingProduct.product_id ||
           editingProduct.id;
 
-        await teacherCourseService.updateProduct(
+        await adminService.updateProduct(
           productId,
           formData
         );
 
         alert("Cập nhật sản phẩm thành công.");
       } else {
-        await teacherCourseService.createProduct(formData);
+        await adminService.createProduct(formData);
 
         alert("Thêm sản phẩm thành công.");
       }
@@ -312,7 +312,7 @@ const ProductManagement = () => {
 
   const handleDeactivate = async (product) => {
     const productId =
-      product.course_id ||
+      product.product_id ||
       product.product_id ||
       product.id;
 
@@ -334,7 +334,7 @@ const ProductManagement = () => {
     }
 
     try {
-      await teacherCourseService.deleteProduct(productId);
+      await adminService.deleteProduct(productId);
 
       alert("Đã ngừng bán sản phẩm.");
 
@@ -354,7 +354,7 @@ const ProductManagement = () => {
 
   const handleActivate = async (product) => {
     const productId =
-      product.course_id ||
+      product.product_id ||
       product.product_id ||
       product.id;
 
@@ -367,7 +367,7 @@ const ProductManagement = () => {
 
       formData.append("is_active", "true");
 
-      await teacherCourseService.updateProduct(
+      await adminService.updateProduct(
         productId,
         formData
       );
@@ -506,7 +506,7 @@ const ProductManagement = () => {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredProducts.map((product) => {
               const productId =
-                product.course_id ||
+                product.product_id ||
                 product.product_id ||
                 product.id;
 

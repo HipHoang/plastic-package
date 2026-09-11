@@ -214,7 +214,7 @@ const OrderHistory = () => {
             </p>
 
             <Link
-              to="/all-courses"
+              to="/products"
               className="mt-6 inline-flex items-center rounded-xl bg-[#002B5B] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#001f42]"
             >
               Xem sản phẩm

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Sidebar from "./SideBar";
-import TeacherSidebar from "./TeacherSidebar";
+import AdminSidebar from "./AdminSidebar";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getStoredAuth, isStaffRole, isAdminRole } from "../../untils/auth";
@@ -28,7 +28,7 @@ const Layout = ({ children }) => {
             ${isExpanded ? "w-64" : "w-20"}`}
           >
             {isManagement ? (
-              <TeacherSidebar
+              <AdminSidebar
                 isExpanded={isExpanded}
                 setIsExpanded={setIsExpanded}
               />
