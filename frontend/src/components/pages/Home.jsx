@@ -40,7 +40,7 @@ const ProductCard = ({ product, onClick }) => {
           <img
             src={product.image}
             alt={name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="flex flex-col items-center justify-center text-slate-300">
@@ -140,50 +140,73 @@ const GuestHome = ({ products, categories, loading }) => {
     <div className="space-y-12">
 
       {/* HERO */}
-      <section className="relative overflow-hidden rounded-[28px] bg-linear-to-r from-[#021E4B] via-[#063B82] to-[#0B63CE] text-white shadow-xl">
-        <div className="relative z-10 px-7 py-12 md:px-12 lg:px-16 md:py-16 max-w-3xl">
-          <span className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm mb-5">
-            <FiPackage />
-            ASIAPP Plastic Packaging
-          </span>
+      <section className="relative overflow-hidden rounded-[28px] bg-[#021E4B] text-white shadow-xl">
+        <div className="grid items-center gap-8 px-7 py-10 md:px-12 md:py-14 lg:grid-cols-[1.15fr_0.85fr] lg:px-16">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm">
+              <FiPackage />
+              ASIAPP Plastic Packaging
+            </span>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
-            Giải pháp bao bì nhựa
-            <br />
-            cho doanh nghiệp
-          </h1>
+            <h1 className="mt-5 text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl">
+              Bao bì nhựa
+              <br />
+              cho chuỗi cung ứng
+            </h1>
 
-          <p className="text-blue-100 text-base md:text-lg leading-7 mt-5 max-w-2xl">
-            Khám phá các sản phẩm túi PE, PP, HDPE và túi rác
-            phục vụ nhu cầu đóng gói, sản xuất và công nghiệp.
-          </p>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-blue-100 md:text-lg">
+              Danh mục túi PE, PP, HDPE và túi rác với thông số rõ ràng, phù hợp cho đóng gói, sản xuất và vận hành doanh nghiệp.
+            </p>
 
-          <div className="flex flex-wrap gap-3 mt-8">
-            <button
-              onClick={() => navigate("/products")}
-              className="bg-white text-[#003B7A] px-6 py-3 rounded-full font-bold hover:bg-blue-50 transition flex items-center gap-2"
-            >
-              Xem sản phẩm
-              <FiArrowRight />
-            </button>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                onClick={() => navigate("/products")}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-[#003B7A] transition hover:bg-blue-50"
+              >
+                Xem sản phẩm
+                <FiArrowRight />
+              </button>
 
-            <a
-              href="tel:02873008899"
-              className="border border-white/30 bg-white/10 px-6 py-3 rounded-full font-semibold hover:bg-white/20 transition"
-            >
-              Liên hệ tư vấn
-            </a>
+              <a
+                href="tel:02873008899"
+                className="rounded-full border border-white/30 bg-white/10 px-6 py-3 font-semibold transition hover:bg-white/20"
+              >
+                Liên hệ tư vấn
+              </a>
+            </div>
+
+            <div className="mt-9 flex flex-wrap gap-x-8 gap-y-3 border-t border-white/15 pt-5 text-sm text-blue-100">
+              <span><strong className="text-xl text-white">{products.length}</strong> sản phẩm</span>
+              <span><strong className="text-xl text-white">{categories.length}</strong> danh mục</span>
+              <span>MOQ và thông số theo từng sản phẩm</span>
+            </div>
           </div>
-        </div>
 
-        <div className="absolute -right-24 -bottom-28 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl" />
-        <div className="absolute right-12 top-10 hidden lg:block opacity-20">
-          <FiPackage size={220} />
+          <div className="relative min-h-64 overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 lg:min-h-80">
+            {featuredProducts[0]?.image ? (
+              <img
+                src={featuredProducts[0].image}
+                alt={getProductName(featuredProducts[0])}
+                className="h-full min-h-56 w-full object-contain rounded-2xl bg-white/95 p-5"
+              />
+            ) : (
+              <div className="flex h-full min-h-56 flex-col items-center justify-center text-blue-100">
+                <FiPackage size={72} />
+                <span className="mt-3 text-sm">Bao bì nhựa ASIAPP</span>
+              </div>
+            )}
+            {featuredProducts[0] && (
+              <div className="absolute bottom-7 left-7 right-7 rounded-2xl bg-[#021E4B]/90 px-4 py-3 backdrop-blur-sm">
+                <p className="text-xs text-blue-200">Sản phẩm tiêu biểu</p>
+                <p className="mt-1 truncate font-semibold">{getProductName(featuredProducts[0])}</p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
       {/* USP */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <section id="gioi-thieu" className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <div className="bg-white rounded-2xl border border-gray-100 p-6 flex gap-4">
           <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50 text-[#0047AB] flex items-center justify-center">
             <FiPackage size={23} />

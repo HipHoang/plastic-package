@@ -2,6 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
+from sqlalchemy import text
 
 from app.configs.db import db
 from app.configs.settings import Config
@@ -56,13 +57,6 @@ def create_app():
         url_prefix="/api/products"
     )
 
-    # Keep the legacy prefix available while clients migrate to products.
-    app.register_blueprint(
-        product_bp,
-        url_prefix="/api/courses",
-        name="legacy_product_bp"
-    )
-
     app.register_blueprint(
         payment_bp,
         url_prefix="/api/payment"
@@ -92,6 +86,15 @@ def create_app():
     def index():
         return {
             "message": "ASIAPP Backend is running!"
+        }
+
+    @app.route("/api/health")
+    def health():
+        return {
+            "status": "ok",
+            "database": db.session.execute(
+                text("SELECT DATABASE()")
+            ).scalar_one()
         }
 
     return app

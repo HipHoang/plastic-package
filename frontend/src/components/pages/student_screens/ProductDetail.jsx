@@ -18,7 +18,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { productService } from "../../../services/productService";
 import { paymentService } from "../../../services/paymentService";
 import { reviewService } from "../../../services/reviewService";
-import { enrollmentService } from "../../../services/enrollmentService";
 import { getCurrentUser } from "../../../untils/auth";
 
 const formatPrice = (price) => {
@@ -114,7 +113,7 @@ const ProductDetail = () => {
   const loadReviewData = async (productId) => {
     try {
       const result =
-        await reviewService.getCourseReviews(
+        await reviewService.getProductReviews(
           productId
         );
 
@@ -218,7 +217,7 @@ const ProductDetail = () => {
 
         try {
           const purchased =
-            await enrollmentService.checkEnrollment(
+            await paymentService.hasPurchasedProduct(
               id
             );
 
@@ -491,7 +490,7 @@ const ProductDetail = () => {
         );
 
         navigate(
-          `/payment-success?product_id=${productId}&method=cod`
+          `/payment-success?product_id=${productId}&method=cod&order_id=${response?.order?.id || ""}`
         );
       } catch (error) {
         console.error(
@@ -722,7 +721,7 @@ const ProductDetail = () => {
   return (
     <>
       {notification.show && (
-        <div className="fixed top-6 right-6 z-[100] w-[min(420px,calc(100vw-32px))]">
+        <div className="fixed top-6 right-6 z-100 w-[min(420px,calc(100vw-32px))]">
           <div
             className={`rounded-2xl border shadow-xl bg-white px-5 py-4 flex items-start gap-3 ${
               notification.type ===
@@ -1688,7 +1687,7 @@ const ProductDetail = () => {
                         Giao đến
                       </span>
 
-                      <span className="font-medium text-slate-700 text-right break-words">
+                      <span className="font-medium text-slate-700 text-right wrap-break">
                         {paymentForm.address ||
                           "Chưa nhập địa chỉ"}
                       </span>
@@ -1860,7 +1859,7 @@ const ProductDetail = () => {
       )}
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[110] bg-black/50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-110 bg-black/50 flex items-center justify-center px-4">
           <div className="w-full max-w-md bg-white rounded-[28px] shadow-2xl p-6">
             <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4">
               <FiTrash2

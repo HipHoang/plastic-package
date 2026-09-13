@@ -16,12 +16,11 @@ class Enrollment(db.Model):
         nullable=False
     )
 
-    course_id = db.Column(
+    product_id = db.Column(
         db.Integer,
-        db.ForeignKey("courses.course_id"),
+        db.ForeignKey("products.product_id"),
         nullable=False
     )
-    product_id = db.synonym("course_id")
 
     status = db.Column(
         db.String(50),
@@ -45,9 +44,9 @@ class Enrollment(db.Model):
         lazy=True
     )
 
-    course = db.relationship(
+    product = db.relationship(
         "Product",
-        backref="enrolled_users"
+        backref="orders"
     )
 
     user = db.relationship(
@@ -59,7 +58,7 @@ class Enrollment(db.Model):
         return {
             "enrollment_id": self.enrollment_id,
             "user_id": self.user_id,
-            "course_id": self.course_id,
+            "product_id": self.product_id,
             "status": self.status,
             "created_at": (
                 self.created_at.isoformat()
@@ -102,16 +101,6 @@ class Payment(db.Model):
         default="pending"
     )
 
-    transaction_code = db.Column(
-        db.String(100),
-        nullable=True
-    )
-
-    created_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow
-    )
-
     def to_dict(self):
         return {
             "payment_id": self.payment_id,
@@ -119,10 +108,4 @@ class Payment(db.Model):
             "amount": float(self.amount or 0),
             "method": self.method,
             "status": self.status,
-            "transaction_code": self.transaction_code,
-            "created_at": (
-                self.created_at.isoformat()
-                if self.created_at
-                else None
-            ),
         }

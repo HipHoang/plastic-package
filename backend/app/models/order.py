@@ -16,12 +16,11 @@ class Order(db.Model):
         nullable=False
     )
 
-    course_id = db.Column(
+    product_id = db.Column(
         db.Integer,
-        db.ForeignKey("courses.course_id"),
+        db.ForeignKey("products.product_id"),
         nullable=False
     )
-    product_id = db.synonym("course_id")
 
     amount = db.Column(
         db.Float,
@@ -83,8 +82,7 @@ class Order(db.Model):
             "id": self.id,
             "order_id": self.id,
             "user_id": self.user_id,
-            "course_id": self.course_id,
-            "product_id": self.course_id,
+            "product_id": self.product_id,
             "amount": float(self.amount or 0),
             "quantity": self.quantity or 1,
             "status": self.status,

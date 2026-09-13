@@ -226,14 +226,13 @@ def my_orders():
             order_data = order.to_dict()
 
             product = Product.query.get(
-                order.course_id
+                order.product_id
             )
 
             if product:
                 order_data["product"] = {
-                    "id": product.course_id,
-                    "product_id": product.course_id,
-                    "course_id": product.course_id,
+                    "id": product.product_id,
+                    "product_id": product.product_id,
                     "name": product.title,
                     "title": product.title,
                     "image": product.image,
@@ -294,14 +293,13 @@ def order_detail(order_id):
         order_data = order.to_dict()
 
         product = Product.query.get(
-            order.course_id
+            order.product_id
         )
 
         if product:
             order_data["product"] = {
-                "id": product.course_id,
-                "product_id": product.course_id,
-                "course_id": product.course_id,
+                "id": product.product_id,
+                "product_id": product.product_id,
                 "name": product.title,
                 "title": product.title,
                 "description": product.description,
@@ -385,13 +383,13 @@ def admin_orders():
             # PRODUCT
             # -------------------------
             product = Product.query.get(
-                order.course_id
+                order.product_id
             )
 
             if product:
                 order_data["product"] = {
-                    "id": product.course_id,
-                    "product_id": product.course_id,
+                    "id": product.product_id,
+                    "product_id": product.product_id,
                     "name": product.title,
                     "title": product.title,
                     "image": product.image,
@@ -471,13 +469,13 @@ def admin_order_detail(order_id):
         # PRODUCT
         # -------------------------
         product = Product.query.get(
-            order.course_id
+            order.product_id
         )
 
         if product:
             order_data["product"] = {
-                "id": product.course_id,
-                "product_id": product.course_id,
+                "id": product.product_id,
+                "product_id": product.product_id,
                 "name": product.title,
                 "title": product.title,
                 "description": product.description,

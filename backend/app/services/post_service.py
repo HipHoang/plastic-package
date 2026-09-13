@@ -2,10 +2,10 @@ from app.models import Post, Enrollment, Comment
 from app.configs.db import db
 
 
-def create_post(user_id, course_id, content, title=None, image=None):
+def create_post(user_id, product_id, content, title=None, image=None):
     enrollment = Enrollment.query.filter_by(
         user_id=user_id,
-        course_id=course_id
+        product_id=product_id
     ).first()
 
     if not enrollment:
@@ -20,11 +20,8 @@ def create_post(user_id, course_id, content, title=None, image=None):
 
     post = Post(
         user_id=user_id,
-        course_id=course_id,
-        title=title,
-        content=content,
-        image=image,
-        is_published=True
+        product_id=product_id,
+        content=content
     )
 
     db.session.add(post)
@@ -37,14 +34,11 @@ def create_post(user_id, course_id, content, title=None, image=None):
     }, 201
 
 
-def get_posts_by_course(course_id, page=1, size=10):
+def get_posts_by_product(product_id, page=1, size=10):
     page = max(int(page), 1)
     size = min(max(int(size), 1), 50)
 
-    query = Post.query.filter_by(
-        course_id=course_id,
-        is_published=True
-    )
+    query = Post.query.filter_by(product_id=product_id)
 
     total = query.count()
 
@@ -69,11 +63,10 @@ def get_posts_by_course(course_id, page=1, size=10):
             {
                 "post_id": post.post_id,
                 "id": post.post_id,
-                "title": post.title,
+                "title": None,
                 "content": post.content,
-                "image": post.image,
-                "course_id": post.course_id,
-                "product_id": post.course_id,
+                "image": None,
+                "product_id": post.product_id,
                 "created_at": (
                     post.created_at.isoformat()
                     if post.created_at

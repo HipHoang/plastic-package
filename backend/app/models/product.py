@@ -3,10 +3,9 @@ from datetime import datetime
 
 
 class Product(db.Model):
-    __tablename__ = "courses"
+    __tablename__ = "products"
 
-    course_id = db.Column(db.Integer, primary_key=True)
-    product_id = db.synonym("course_id")
+    product_id = db.Column(db.Integer, primary_key=True)
 
     # =========================
     # PRODUCT BASIC INFO
@@ -17,7 +16,7 @@ class Product(db.Model):
     image = db.Column(db.String(500))
 
     # Giữ lại để tương thích hệ thống cũ
-    instructor_id = db.Column(
+    staff_id = db.Column(
         db.Integer,
         db.ForeignKey("users.user_id"),
         nullable=True
@@ -91,7 +90,7 @@ class Product(db.Model):
     # =========================
     # RELATIONSHIPS
     # =========================
-    instructor = db.relationship(
+    staff = db.relationship(
         "User",
         backref="products"
     )
@@ -103,9 +102,8 @@ class Product(db.Model):
     # =========================
     def to_dict(self):
         return {
-            "course_id": self.course_id,
-            "id": self.course_id,
-            "product_id": self.course_id,
+            "id": self.product_id,
+            "product_id": self.product_id,
 
             "title": self.title,
             "name": self.title,
@@ -137,10 +135,10 @@ class Product(db.Model):
             "is_published": self.is_published,
             "is_active": self.is_active,
 
-            "instructor_id": self.instructor_id,
-            "instructor_name": (
-                self.instructor.name
-                if self.instructor
+            "staff_id": self.staff_id,
+            "staff_name": (
+                self.staff.name
+                if self.staff
                 else "ASIAPP"
             ),
 

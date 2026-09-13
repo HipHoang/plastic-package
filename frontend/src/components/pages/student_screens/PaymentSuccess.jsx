@@ -5,6 +5,7 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
 
   const method = params.get("method");
+  const orderId = params.get("order_id");
   const isCod = method === "cod";
 
   return (
@@ -38,6 +39,12 @@ const PaymentSuccess = () => {
 
           {isCod ? (
             <div className="space-y-2 text-sm text-gray-600">
+              {orderId && (
+                <p>
+                  • Mã đơn hàng: #{orderId}
+                </p>
+              )}
+
               <p>
                 • Hình thức thanh toán: COD
               </p>
@@ -84,6 +91,13 @@ const PaymentSuccess = () => {
             className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
           >
             Về trang chủ
+          </button>
+
+          <button
+            onClick={() => navigate("/orders")}
+            className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
+          >
+            Xem đơn hàng
           </button>
         </div>
 

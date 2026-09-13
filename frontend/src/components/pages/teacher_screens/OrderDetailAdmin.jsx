@@ -79,10 +79,7 @@ function getProductName(order) {
   return (
     order?.product?.name ||
     order?.product?.title ||
-    order?.course?.name ||
-    order?.course?.title ||
     order?.product_name ||
-    order?.course_title ||
     "Sản phẩm"
   );
 }
@@ -91,8 +88,6 @@ function getProductImage(order) {
   return (
     order?.product?.image ||
     order?.product?.image_url ||
-    order?.course?.image ||
-    order?.course?.image_url ||
     null
   );
 }
@@ -167,7 +162,7 @@ function InfoRow({ icon: Icon, label, children }) {
 
       <div className="min-w-0 flex-1">
         <p className="text-xs text-gray-400">{label}</p>
-        <div className="mt-0.5 break-words text-sm text-gray-700">
+        <div className="mt-0.5 wrap-break-word text-sm text-gray-700">
           {children}
         </div>
       </div>
@@ -288,7 +283,7 @@ export default function OrderDetailAdmin() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        <div className="mx-auto flex min-h-[400px] max-w-7xl items-center justify-center rounded-xl bg-white shadow-sm">
+        <div className="mx-auto flex min-h-100 max-w-7xl items-center justify-center rounded-xl bg-white shadow-sm">
           <div className="text-sm text-gray-500">
             Đang tải thông tin đơn hàng...
           </div>
@@ -594,7 +589,7 @@ export default function OrderDetailAdmin() {
               </div>
 
               <div className="rounded-lg bg-gray-50 p-4">
-                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-gray-600">
+                <p className="whitespace-pre-wrap wrap-break-word text-sm leading-6 text-gray-600">
                   {getOrderNote(order)}
                 </p>
               </div>

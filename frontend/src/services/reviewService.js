@@ -1,7 +1,7 @@
 import apiClient from "../untils/auth";
 
 export const reviewService = {
-  async getCourseReviews(productId, page = 1, size = 10) {
+  async getProductReviews(productId, page = 1, size = 10) {
     try {
       const res = await apiClient.get(
         `/reviews/products/${productId}`,
@@ -82,7 +82,7 @@ export const reviewService = {
 
   async getMyReview(productId) {
     try {
-      const result = await this.getCourseReviews(
+      const result = await this.getProductReviews(
         productId,
         1,
         50
@@ -110,9 +110,9 @@ export const reviewService = {
     }
   },
 
-  async getCourseReviewStats(productId) {
+  async getProductReviewStats(productId) {
     try {
-      const result = await this.getCourseReviews(
+      const result = await this.getProductReviews(
         productId,
         1,
         1
@@ -201,7 +201,7 @@ export const reviewService = {
 
       productId:
         review.product_id ??
-        review.course_id,
+        review.product_id,
 
       rating:
         Number(review.rating || 0),

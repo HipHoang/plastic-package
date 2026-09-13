@@ -35,17 +35,17 @@ def search_courses(keyword):
     if not keyword:
         return Product.query.limit(5).all()
 
-    courses = Product.query.filter(
+    products = Product.query.filter(
         or_(
             Product.title.ilike(f"%{keyword}%"),
             Product.description.ilike(f"%{keyword}%")
         )
     ).limit(5).all()
 
-    if not courses:
-        courses = Product.query.limit(5).all()
+    if not products:
+        products = Product.query.limit(5).all()
 
-    return courses
+    return products
 
 def get_chat_history(user_id, limit=5):
     messages = ChatMessage.query.filter_by(user_id=user_id) \
@@ -143,18 +143,17 @@ def get_course_recommendations(user_id):
     """Temporary data - replace with ML logic later"""
     from app.models.product import Product
     # Get top 4 courses by rating or random for demo
-    courses = Product.query.order_by(Product.course_id).limit(4).all()
+    products = Product.query.order_by(Product.product_id).limit(4).all()
     recommendations = []
-    for i, course in enumerate(courses, 1):
+    for i, product in enumerate(products, 1):
         recommendations.append({
             "id": i,
-            "courseId": course.course_id,
-            "title": course.title,
-            "instructor": course.instructor.name if course.instructor else "Unknown Instructor",
-            "image": course.image or "https://images.unsplash.com/photo-1524178232363-9330c6d9dc9e?w=500&auto=format&fit=crop&q=60",
-            "level": course.level or "Cơ bản",
+            "productId": product.product_id,
+            "title": product.title,
+            "staff": product.staff.name if product.staff else "ASIAPP",
+            "image": product.image or "https://images.unsplash.com/photo-1526379095098-d400fd0bf935",
+            "material": product.material or "Nhựa nguyên sinh",
             "matchPercentage": 85 + i * 3,  # Demo 85-94%
             "reason": "Khóa học phù hợp với nền tảng lập trình của bạn"
         })
     return recommendations
-

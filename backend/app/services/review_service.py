@@ -5,13 +5,13 @@ from sqlalchemy import func
 
 def create_or_update_review(
     user_id,
-    course_id,
+    product_id,
     rating,
     comment
 ):
     enrollment = Enrollment.query.filter_by(
         user_id=user_id,
-        course_id=course_id
+        product_id=product_id
     ).first()
 
     if not enrollment:
@@ -33,7 +33,7 @@ def create_or_update_review(
 
     review = Review.query.filter_by(
         user_id=user_id,
-        course_id=course_id
+        product_id=product_id
     ).first()
 
     if review:
@@ -42,7 +42,7 @@ def create_or_update_review(
     else:
         review = Review(
             user_id=user_id,
-            course_id=course_id,
+            product_id=product_id,
             rating=rating,
             comment=comment
         )
@@ -57,8 +57,8 @@ def create_or_update_review(
     }, 200
 
 
-def get_reviews_by_course(
-    course_id,
+def get_reviews_by_product(
+    product_id,
     page=1,
     size=10
 ):
@@ -66,7 +66,7 @@ def get_reviews_by_course(
     size = min(max(int(size), 1), 50)
 
     query = Review.query.filter_by(
-        course_id=course_id
+        product_id=product_id
     ).order_by(
         Review.created_at.desc()
     )
@@ -122,19 +122,19 @@ def delete_review(
     }, 200
 
 
-def get_course_rating(course_id):
+def get_product_rating(product_id):
     avg = (
         db.session.query(
             func.avg(Review.rating)
         )
         .filter(
-            Review.course_id == course_id
+            Review.product_id == product_id
         )
         .scalar()
     )
 
     count = Review.query.filter_by(
-        course_id=course_id
+        product_id=product_id
     ).count()
 
     return {

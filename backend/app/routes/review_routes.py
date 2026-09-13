@@ -4,9 +4,11 @@ from flask_jwt_extended import (
     jwt_required,
     get_jwt_identity,
 )
+from app.models import Review, User
+from app.models.user import UserRole
 
 from app.services.review_service import (
-    get_reviews_by_course,
+    get_reviews_by_product,
     create_or_update_review,
     delete_review,
 )
@@ -23,18 +25,54 @@ review_bp = Blueprint(
 )
 
 
+def require_admin_or_staff():
+    user = User.query.get(int(get_jwt_identity()))
+    if not user:
+        return None, error_response("Không tìm thấy tài khoản", 404)
+
+    if user.role not in [UserRole.ADMIN, UserRole.STAFF]:
+        return None, error_response("Bạn không có quyền quản trị", 403)
+
+    return user, None
+
+
+@review_bp.route("/admin", methods=["GET"])
+@jwt_required()
+def get_admin_reviews():
+    try:
+        _, permission_error = require_admin_or_staff()
+        if permission_error:
+            return permission_error
+
+        reviews = Review.query.order_by(Review.created_at.desc()).all()
+        data = []
+        for review in reviews:
+            item = review.to_dict()
+            item.update({
+                "product_name": review.product.title if review.product else "Sản phẩm",
+                "customer_name": review.user.name if review.user else "Khách hàng",
+                "customer_email": review.user.email if review.user else None,
+                "status": "published",
+            })
+            data.append(item)
+
+        return success_response(
+            data=data,
+            message="Lấy danh sách đánh giá thành công",
+            status_code=200,
+        )
+    except Exception as e:
+        return error_response(str(e), 500)
+
+
 # =========================
 # DANH SÁCH ĐÁNH GIÁ
 # =========================
 @review_bp.route(
-    "/products/<int:course_id>",
+    "/products/<int:product_id>",
     methods=["GET"]
 )
-@review_bp.route(
-    "/courses/<int:course_id>",
-    methods=["GET"]
-)
-def get_reviews(course_id):
+def get_reviews(product_id):
     try:
         page = request.args.get(
             "page",
@@ -48,8 +86,8 @@ def get_reviews(course_id):
             type=int
         )
 
-        data = get_reviews_by_course(
-            course_id,
+        data = get_reviews_by_product(
+            product_id,
             page,
             size
         )
@@ -71,15 +109,11 @@ def get_reviews(course_id):
 # TẠO / CẬP NHẬT ĐÁNH GIÁ
 # =========================
 @review_bp.route(
-    "/products/<int:course_id>",
-    methods=["POST"]
-)
-@review_bp.route(
-    "/courses/<int:course_id>",
+    "/products/<int:product_id>",
     methods=["POST"]
 )
 @jwt_required()
-def create_review(course_id):
+def create_review(product_id):
     try:
         user_id = get_jwt_identity()
 
@@ -107,7 +141,7 @@ def create_review(course_id):
 
         result, status = create_or_update_review(
             user_id=user_id,
-            course_id=course_id,
+            product_id=product_id,
             rating=rating,
             comment=comment
         )

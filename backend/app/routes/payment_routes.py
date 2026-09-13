@@ -1,12 +1,14 @@
 import hashlib
 import hmac
 import urllib.parse
+from datetime import datetime, timedelta
 
 from flask import Blueprint, request, jsonify, redirect
 from flask_jwt_extended import (
     verify_jwt_in_request,
     get_jwt_identity,
 )
+from flask_jwt_extended.exceptions import NoAuthorizationError
 
 from app.services.payment_service import PaymentService
 from app.models.enrollment import Enrollment, Payment
@@ -27,7 +29,7 @@ payment_bp = Blueprint(
 def validate_order_data(data):
     product_id = data.get(
         "product_id",
-        data.get("course_id")
+        data.get("product_id")
     )
 
     if not product_id:
@@ -55,9 +57,10 @@ def validate_order_data(data):
         )
 
     try:
-        quantity = int(
-            data.get("quantity", 1)
-        )
+        raw_quantity = data.get("quantity", 1)
+        quantity = int(raw_quantity)
+        if str(raw_quantity).strip() != str(quantity):
+            raise ValueError
     except (TypeError, ValueError):
         raise ValueError(
             "Số lượng không hợp lệ"
@@ -194,7 +197,7 @@ def checkout():
         payment_url = (
             PaymentService.create_payment_url(
                 user_id=user_id,
-                course_id=order_data[
+                product_id=order_data[
                     "product_id"
                 ],
                 quantity=order_data[
@@ -218,7 +221,7 @@ def checkout():
             Order.query
             .filter_by(
                 user_id=int(user_id),
-                course_id=order_data[
+                product_id=order_data[
                     "product_id"
                 ]
             )
@@ -264,6 +267,12 @@ def checkout():
             "payment_method": "VNPay",
             "payment_url": payment_url,
         }), 200
+
+    except NoAuthorizationError as e:
+        db.session.rollback()
+        return jsonify({
+            "message": str(e)
+        }), 401
 
     except ValueError as e:
         db.session.rollback()
@@ -320,6 +329,33 @@ def create_cod_order():
             data
         )
 
+        duplicate_cutoff = datetime.utcnow() - timedelta(seconds=30)
+        existing_order = (
+            Order.query
+            .filter_by(
+                user_id=int(user_id),
+                product_id=order_data["product_id"],
+                quantity=order_data["quantity"],
+                amount=order_data["amount"],
+                status="pending_confirmation",
+                customer_name=order_data["customer_name"],
+                customer_phone=order_data["customer_phone"],
+                customer_email=order_data["customer_email"],
+                customer_address=order_data["customer_address"],
+            )
+            .filter(Order.created_at >= duplicate_cutoff)
+            .order_by(Order.id.desc())
+            .first()
+        )
+
+        if existing_order:
+            return jsonify({
+                "success": True,
+                "message": "Đơn hàng của bạn đã được tiếp nhận.",
+                "payment_method": "COD",
+                "order": existing_order.to_dict(),
+            }), 200
+
         product = order_data["product"]
 
         order_desc = (
@@ -339,7 +375,7 @@ def create_cod_order():
         # =========================
         new_order = Order(
             user_id=int(user_id),
-            course_id=order_data[
+            product_id=order_data[
                 "product_id"
             ],
             amount=order_data[
@@ -368,35 +404,6 @@ def create_cod_order():
         db.session.add(new_order)
         db.session.flush()
 
-        # =========================
-        # TẠO ENROLLMENT
-        # =========================
-        existing_enrollment = (
-            Enrollment.query
-            .filter_by(
-                user_id=int(user_id),
-                course_id=order_data[
-                    "product_id"
-                ]
-            )
-            .first()
-        )
-
-        if not existing_enrollment:
-            new_enrollment = Enrollment(
-                user_id=int(user_id),
-                course_id=order_data[
-                    "product_id"
-                ],
-                status="active"
-            )
-
-            db.session.add(
-                new_enrollment
-            )
-
-            db.session.flush()
-
         db.session.commit()
 
         return jsonify({
@@ -409,6 +416,13 @@ def create_cod_order():
             "payment_method": "COD",
             "order": new_order.to_dict(),
         }), 201
+
+    except NoAuthorizationError as e:
+        db.session.rollback()
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 401
 
     except ValueError as e:
         db.session.rollback()
@@ -496,7 +510,7 @@ def vnpay_return():
                 Enrollment.query
                 .filter_by(
                     user_id=order.user_id,
-                    course_id=order.course_id
+                    product_id=order.product_id
                 )
                 .first()
             )
@@ -514,7 +528,7 @@ def vnpay_return():
             if not existing_enrollment:
                 new_enrollment = Enrollment(
                     user_id=order.user_id,
-                    course_id=order.course_id,
+                    product_id=order.product_id,
                     status="active"
                 )
 
@@ -531,11 +545,6 @@ def vnpay_return():
                     amount=order.amount,
                     method="VNPay",
                     status="completed",
-                    transaction_code=(
-                        vnp_params.get(
-                            "vnp_TransactionNo"
-                        )
-                    ),
                 )
 
                 db.session.add(
@@ -561,11 +570,6 @@ def vnpay_return():
                         amount=order.amount,
                         method="VNPay",
                         status="completed",
-                        transaction_code=(
-                            vnp_params.get(
-                                "vnp_TransactionNo"
-                            )
-                        ),
                     )
 
                     db.session.add(
@@ -577,7 +581,7 @@ def vnpay_return():
             return redirect(
                 "http://localhost:5173/"
                 "payment-success"
-                f"?course_id={order.course_id}"
+                f"?product_id={order.product_id}"
                 "&method=vnpay"
             )
 
@@ -592,7 +596,7 @@ def vnpay_return():
             return redirect(
                 "http://localhost:5173/"
                 "payment-failed"
-                f"?course_id={order.course_id}"
+                f"?product_id={order.product_id}"
                 "&method=vnpay"
             )
 
@@ -614,6 +618,6 @@ def vnpay_return():
     return redirect(
         "http://localhost:5173/"
         "payment-failed"
-        f"?course_id={order.course_id}"
+        f"?product_id={order.product_id}"
         "&method=vnpay"
     )

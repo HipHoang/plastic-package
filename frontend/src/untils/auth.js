@@ -68,10 +68,7 @@ export const isAdminRole = (role) => {
 export const isStaffRole = (role) => {
   return (
     role === "staff" ||
-    role === "STAFF" ||
-    role === "teacher" ||
-    role === "GiangVien" ||
-    role === "GV"
+    role === "STAFF"
   );
 };
 
@@ -80,7 +77,7 @@ export const isTeacherRole = (role) => {
 };
 
 export const isCustomerRole = (role) => {
-  return role === "customer" || role === "CUSTOMER" || role === "student";
+  return role === "customer" || role === "CUSTOMER";
 };
 
 

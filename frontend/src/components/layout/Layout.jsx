@@ -25,7 +25,7 @@ const Layout = ({ children }) => {
         {user && (
           <aside
             className={`transition-all duration-300 ease-in-out bg-[#001E3C] flex-none min-h-[calc(100vh-80px)]
-            ${isExpanded ? "w-64" : "w-20"}`}
+            ${isExpanded ? "w-64 max-md:w-20" : "w-20"}`}
           >
             {isManagement ? (
               <AdminSidebar

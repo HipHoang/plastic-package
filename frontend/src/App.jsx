@@ -18,10 +18,29 @@ import PaymentSuccess from "./components/pages/student_screens/PaymentSuccess";
 import PaymentFailed from "./components/pages/student_screens/PaymentFailed";
 
 import OrderManagement from "./components/pages/teacher_screens/OrderManagement";
+import AdminDashboard from "./components/pages/teacher_screens/AdminDashboard";
+import { useAuth } from "./context/AuthProvider";
+import { getStoredAuth, isAdminRole, isStaffRole } from "./untils/auth";
+
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  const storedUser = getStoredAuth()?.user;
+
+  if (loading) {
+    return <div className="p-8 text-slate-500">Đang xác thực quyền truy cập...</div>;
+  }
+
+  const currentUser = user || storedUser;
+  const isAdmin = isAdminRole(currentUser?.role) || isStaffRole(currentUser?.role);
+
+  return isAdmin ? children : <Navigate to="/" replace />;
+};
 import AdminProfile from "./components/pages/teacher_screens/AdminProfile";
 import OrderDetailAdmin from "./components/pages/teacher_screens/OrderDetailAdmin";
 import ProductManagement from "./components/pages/teacher_screens/ProductManagement";
 import ManagementList from "./components/pages/teacher_screens/ManagementList";
+import AdminNews from "./components/pages/teacher_screens/AdminNews";
+import AdminReviews from "./components/pages/teacher_screens/AdminReviews";
 
 import CustomerAI from "./components/pages/CustomerAI";
 import AIChat from "./components/AIChat";
@@ -42,6 +61,16 @@ function App() {
             <Route path="/products" element={<Products />} />
 
             <Route path="/products/:id" element={<ProductDetail />} />
+
+            <Route
+              path="/all-courses"
+              element={<Navigate to="/products" replace />}
+            />
+
+            <Route
+              path="/courses/:id"
+              element={<Navigate to="/products/:id" replace />}
+            />
 
             {/* =========================
                 CUSTOMER ORDERS
@@ -105,23 +134,13 @@ function App() {
             ========================= */}
 
             <Route
-              path="/admin/products"
-              element={<ProductManagement />}
-            />
-
-            <Route
               path="/admin/dashboard"
-              element={<Navigate to="/admin/products" replace />}
+              element={<AdminRoute><AdminDashboard /></AdminRoute>}
             />
 
             <Route
-              path="/teacher/dashboard"
-              element={<Navigate to="/admin/products" replace />}
-            />
-
-            <Route
-              path="/teacher/products"
-              element={<ProductManagement />}
+              path="/admin/products"
+              element={<AdminRoute><ProductManagement /></AdminRoute>}
             />
 
             {/* =========================
@@ -130,12 +149,12 @@ function App() {
 
             <Route
               path="/admin/orders"
-              element={<OrderManagement />}
+              element={<AdminRoute><OrderManagement /></AdminRoute>}
             />
 
             <Route
               path="/admin/orders/:id"
-              element={<OrderDetailAdmin />}
+              element={<AdminRoute><OrderDetailAdmin /></AdminRoute>}
             />
 
             {/* =========================
@@ -144,12 +163,7 @@ function App() {
 
             <Route
               path="/admin/categories"
-              element={<ManagementList resource="categories" />}
-            />
-
-            <Route
-              path="/teacher/categories"
-              element={<ManagementList resource="categories" />}
+              element={<AdminRoute><ManagementList resource="categories" /></AdminRoute>}
             />
 
             {/* =========================
@@ -158,12 +172,7 @@ function App() {
 
             <Route
               path="/admin/customers"
-              element={<ManagementList resource="customers" />}
-            />
-
-            <Route
-              path="/teacher/customers"
-              element={<ManagementList resource="customers" />}
+              element={<AdminRoute><ManagementList resource="customers" /></AdminRoute>}
             />
 
             {/* =========================
@@ -172,30 +181,7 @@ function App() {
 
             <Route
               path="/admin/news"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Quản lý tin tức
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng quản lý tin tức đang được xây dựng.
-                  </p>
-                </div>
-              }
-            />
-
-            <Route
-              path="/teacher/news"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Quản lý tin tức
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng quản lý tin tức đang được xây dựng.
-                  </p>
-                </div>
-              }
+              element={<AdminRoute><AdminNews /></AdminRoute>}
             />
 
             {/* =========================
@@ -204,30 +190,7 @@ function App() {
 
             <Route
               path="/admin/reviews"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Quản lý đánh giá
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng quản lý đánh giá đang được xây dựng.
-                  </p>
-                </div>
-              }
-            />
-
-            <Route
-              path="/teacher/reviews"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Quản lý đánh giá
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng quản lý đánh giá đang được xây dựng.
-                  </p>
-                </div>
-              }
+              element={<AdminRoute><AdminReviews /></AdminRoute>}
             />
 
             {/* =========================
@@ -236,12 +199,7 @@ function App() {
 
             <Route
               path="/admin/profile"
-              element={<AdminProfile />}
-            />
-
-            <Route
-              path="/teacher/profile"
-              element={<AdminProfile />}
+              element={<AdminRoute><AdminProfile /></AdminRoute>}
             />
 
             {/* =========================
@@ -250,30 +208,10 @@ function App() {
 
             <Route
               path="/admin/settings"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Cài đặt quản trị
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng cài đặt đang được xây dựng.
-                  </p>
-                </div>
-              }
-            />
-
-            <Route
-              path="/teacher/settings"
-              element={
-                <div className="p-8">
-                  <h1 className="text-2xl font-bold">
-                    Cài đặt quản trị
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    Chức năng cài đặt đang được xây dựng.
-                  </p>
-                </div>
-              }
+              element={<AdminRoute><div className="p-8">
+                <h1 className="text-2xl font-bold">Cài đặt quản trị</h1>
+                <p className="mt-2 text-gray-600">Chức năng cài đặt đang được xây dựng.</p>
+              </div></AdminRoute>}
             />
           </Routes>
 

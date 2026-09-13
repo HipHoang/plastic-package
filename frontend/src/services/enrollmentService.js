@@ -1,11 +1,11 @@
 import apiClient from "../untils/auth";
 
-export const enrollmentService = {
+export const orderService = {
   /**
    * Kiểm tra khách hàng đã mua sản phẩm chưa
    * GET /api/products/{productId}/check-enrollment
    */
-  async checkEnrollment(productId) {
+  async checkOrder(productId) {
     try {
       const res = await apiClient.get(
         `/products/${productId}/check-order`
@@ -60,11 +60,9 @@ export const enrollmentService = {
 
   /**
    * Lấy danh sách sản phẩm đã mua
-   * GET /api/products/my-courses
-   *
-   * Giữ tên getMyCourses để không làm hỏng component cũ.
+   * GET /api/products/my-products
    */
-  async getMyCourses() {
+  async getMyOrders() {
     try {
       const res = await apiClient.get("/products/my-products");
 
@@ -77,13 +75,11 @@ export const enrollmentService = {
       return products.map((item) => ({
         productId:
           item.product_id ??
-          item.course_id ??
-          item.id,
+          item.product_id ?? item.id,
 
         id:
           item.product_id ??
-          item.course_id ??
-          item.id,
+          item.product_id ?? item.id,
 
         name:
           item.name ||
@@ -138,13 +134,9 @@ export const enrollmentService = {
    * Alias mới
    */
   async getMyProducts() {
-    return this.getMyCourses();
+    return this.getMyOrders();
   },
 
-  /**
-   * API tiến độ học không còn sử dụng cho website bao bì.
-   * Giữ lại để component cũ không bị lỗi import.
-   */
   async getLearningProgress() {
     return {
       progress: 0,
@@ -152,4 +144,11 @@ export const enrollmentService = {
       currentLessonId: null,
     };
   },
+};
+
+export const enrollmentService = {
+  ...orderService,
+  checkEnrollment: orderService.checkOrder,
+  enrollCourse: orderService.enrollCourse,
+  getMyCourses: orderService.getMyOrders,
 };

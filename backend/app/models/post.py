@@ -16,15 +16,9 @@ class Post(db.Model):
         nullable=True
     )
 
-    course_id = db.Column(
+    product_id = db.Column(
         db.Integer,
-        db.ForeignKey("courses.course_id"),
-        nullable=True
-    )
-    product_id = db.synonym("course_id")
-
-    title = db.Column(
-        db.String(255),
+        db.ForeignKey("products.product_id"),
         nullable=True
     )
 
@@ -32,25 +26,9 @@ class Post(db.Model):
         db.Text
     )
 
-    image = db.Column(
-        db.String(500),
-        nullable=True
-    )
-
-    is_published = db.Column(
-        db.Boolean,
-        default=True
-    )
-
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow
-    )
-
-    updated_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
     )
 
     comments = db.relationship(
@@ -64,23 +42,18 @@ class Post(db.Model):
         return {
             "post_id": self.post_id,
             "id": self.post_id,
-            "title": self.title,
+            "title": None,
             "content": self.content,
-            "image": self.image,
+            "image": None,
             "user_id": self.user_id,
-            "course_id": self.course_id,
-            "product_id": self.course_id,
-            "is_published": self.is_published,
+            "product_id": self.product_id,
+            "is_published": True,
             "created_at": (
                 self.created_at.isoformat()
                 if self.created_at
                 else None
             ),
-            "updated_at": (
-                self.updated_at.isoformat()
-                if self.updated_at
-                else None
-            ),
+            "updated_at": None,
             "comments": [
                 comment.to_dict()
                 for comment in self.comments
@@ -118,12 +91,6 @@ class Comment(db.Model):
         default=datetime.utcnow
     )
 
-    updated_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
-    )
-
     def to_dict(self):
         return {
             "comment_id": self.comment_id,
@@ -134,11 +101,6 @@ class Comment(db.Model):
             "created_at": (
                 self.created_at.isoformat()
                 if self.created_at
-                else None
-            ),
-            "updated_at": (
-                self.updated_at.isoformat()
-                if self.updated_at
                 else None
             ),
         }

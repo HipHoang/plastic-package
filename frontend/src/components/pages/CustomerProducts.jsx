@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from "../../untils/auth";
 import {
   FiBookOpen,
   FiCheckCircle,
@@ -29,8 +29,8 @@ const CustomerProducts = () => {
           return;
         }
 
-        const res = await axios.get(
-          "http://127.0.0.1:5000/api/products/my-courses",
+        const res = await apiClient.get(
+          "/products/my-products",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -41,7 +41,7 @@ const CustomerProducts = () => {
         console.log("My courses API:", res.data);
 
         // Defensive mapping
-        const normalized = (res.data || []).map((c) => ({
+        const normalized = (res.data?.data || []).map((c) => ({
           productId: c.id,
           title: c.title || "",
           image: c.image || "",

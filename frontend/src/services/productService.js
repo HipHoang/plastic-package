@@ -90,13 +90,7 @@ export const productService = {
         error.response?.data || error
       );
 
-      return {
-        results: [],
-        total: 0,
-        page: 1,
-        size: 10,
-        total_pages: 0,
-      };
+      throw error;
     }
   },
 
@@ -128,10 +122,10 @@ export const productService = {
   normalizeProduct(product) {
     return {
       // ID
-      id: product.product_id ?? product.course_id ?? product.id,
+      id: product.product_id ?? product.id,
 
       productId:
-        product.product_id ?? product.course_id ?? product.id,
+        product.product_id ?? product.id,
 
       // Tên sản phẩm
       title:
@@ -217,14 +211,9 @@ export const productService = {
       manufacturer:
         product.manufacturer || "ASIAPP",
 
-      // Giữ một số field cũ để component LMS chưa đổi tên vẫn chạy
-      instructor:
-        product.instructor_name ||
-        product.instructor?.name ||
-        "ASIAPP",
-
-      instructorName:
-        product.instructor_name ||
+      staff:
+        product.staff_name ||
+        product.staff?.name ||
         "ASIAPP",
 
       level:
@@ -235,17 +224,12 @@ export const productService = {
         product.total_duration ||
         "Liên hệ",
 
-      totalChapters: 0,
-      totalLessons: 0,
+      totalSpecifications: 0,
 
       introVideoThumbnail:
         product.image ||
         product.thumbnail ||
         "",
-
-      outcomes: [],
-
-      chapters: [],
 
       createdAt:
         product.created_at || null,
@@ -253,7 +237,6 @@ export const productService = {
       updatedAt:
         product.updated_at || null,
 
-      // Giữ dữ liệu gốc nếu sau này cần thêm trường
       raw: product,
     };
   },

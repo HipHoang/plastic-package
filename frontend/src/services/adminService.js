@@ -27,6 +27,26 @@ const adminService = {
     return response.data;
   },
 
+  async getAdminCategories() {
+    const response = await apiClient.get("/products/admin/product-categories");
+    return response.data;
+  },
+
+  async getAdminCustomers() {
+    const response = await apiClient.get("/users/admin/customers");
+    return response.data;
+  },
+
+  async getAdminPosts() {
+    const response = await apiClient.get("/posts/admin");
+    return response.data;
+  },
+
+  async getAdminReviews() {
+    const response = await apiClient.get("/reviews/admin");
+    return response.data;
+  },
+
   async getAdminProductDetail(productId) {
     const response = await apiClient.get(
       `/products/admin/products/${productId}`

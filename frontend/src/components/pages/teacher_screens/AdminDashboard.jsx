@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import {
-  FiBookOpen,
   FiDollarSign,
-  FiMessageSquare,
+  FiGrid,
   FiPlus,
-  FiStar,
+  FiShoppingBag,
   FiUsers,
 } from "react-icons/fi";
 import CreateProductForm from "../form/CreateProductForm";
@@ -15,18 +14,20 @@ const formatNumber = (num) => {
   return num.toLocaleString("vi-VN");
 };
 
-const formatPrice = (price) => {
-  if (!price || price === 0) return "Miễn phí";
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
+const formatPrice = (price) => `${formatNumber(price)} đ`;
+
+const unwrapList = (response, keys = []) => {
+  if (Array.isArray(response)) return response;
+  for (const key of keys) {
+    if (Array.isArray(response?.[key])) return response[key];
+  }
+  return Array.isArray(response?.data) ? response.data : [];
 };
 
 const AdminDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [stats, setStats] = useState([]);
-  const [courses, setCourses] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -34,43 +35,32 @@ const AdminDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [coursesData, statsData] = await Promise.all([
-          adminService.getStaffProducts(),
-          adminService.getStaffStats(),
+        const [productsResponse, categoriesResponse, ordersResponse, customersResponse] = await Promise.all([
+          adminService.getAdminProducts(),
+          adminService.getAdminCategories(),
+          adminService.getAdminOrders(),
+          adminService.getAdminCustomers(),
         ]);
 
-        // Compute total lessons per course (if API doesn't provide it)
-        const enrichedCourses = coursesData.map((c) => ({
-          ...c,
-          lessons: c.lessons ?? 0,
-        }));
+        const products = unwrapList(productsResponse, ["products"]);
+        const categories = unwrapList(categoriesResponse, ["categories"]);
+        const orders = unwrapList(ordersResponse, ["orders", "result"]);
+        const customers = unwrapList(customersResponse, ["customers"]);
+        const pendingOrders = orders.filter((order) => ["pending", "pending_confirmation"].includes(String(order.status).toLowerCase())).length;
+        const revenue = orders
+          .filter((order) => ["paid", "success", "completed", "delivered"].includes(String(order.status).toLowerCase()))
+          .reduce((total, order) => total + Number(order.amount || 0), 0);
 
-        setCourses(enrichedCourses);
-
-        if (statsData) {
-          setStats([
-            {
-              title: "Sản phẩm",
-              value: String(statsData.total_courses ?? 0),
-              icon: <FiBookOpen size={22} />,
-            },
-            {
-              title: "Khách hàng",
-              value: formatNumber(statsData.total_students),
-              icon: <FiUsers size={22} />,
-            },
-            {
-              title: "Doanh thu",
-              value: formatNumber(statsData.total_revenue) + "đ",
-              icon: <FiDollarSign size={22} />,
-            },
-            {
-              title: "Đánh giá TB",
-              value: String(statsData.avg_rating ?? 0),
-              icon: <FiStar size={22} />,
-            },
-          ]);
-        }
+        setRecentOrders(orders.slice(0, 8));
+        setStats([
+          { title: "Tổng sản phẩm", value: formatNumber(products.length), icon: <FiShoppingBag size={22} /> },
+          { title: "Sản phẩm đang bán", value: formatNumber(products.filter((product) => product.is_active !== false).length), icon: <FiShoppingBag size={22} /> },
+          { title: "Tổng danh mục", value: formatNumber(categories.length), icon: <FiGrid size={22} /> },
+          { title: "Tổng đơn hàng", value: formatNumber(orders.length), icon: <FiShoppingBag size={22} /> },
+          { title: "Khách hàng", value: formatNumber(customers.length), icon: <FiUsers size={22} /> },
+          { title: "Đơn hàng chờ xác nhận", value: formatNumber(pendingOrders), icon: <FiShoppingBag size={22} /> },
+          { title: "Doanh thu ghi nhận", value: formatPrice(revenue), icon: <FiDollarSign size={22} /> },
+        ]);
       } catch (err) {
         setError(err.message || "Không thể tải dữ liệu dashboard");
       } finally {
@@ -101,25 +91,19 @@ const AdminDashboard = () => {
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-slate-800">Dashboard</h1>
+          <h1 className="text-4xl font-bold text-slate-800">Tổng quan quản trị</h1>
           <p className="text-slate-500 mt-2">
-            Tổng quan hoạt động giảng dạy của bạn
+            Theo dõi sản phẩm, đơn hàng và khách hàng của ASIAPP.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <select className="bg-white border border-gray-200 rounded-2xl px-4 py-3 text-slate-700 outline-none focus:border-[#002B5B]">
-            <option>Tháng 5, 2025</option>
-            <option>Tháng 4, 2025</option>
-            <option>Tháng 3, 2025</option>
-          </select>
-
           <button
             onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-2 bg-[#0B5CFF] hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-semibold shadow-md transition"
           >
             <FiPlus />
-            Tạo sản phẩm
+            Thêm sản phẩm
           </button>
         </div>
       </div>
@@ -151,87 +135,84 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_0.9fr] gap-6">
         <div className="bg-white rounded-[28px] border border-gray-100 p-6 shadow-sm">
           <h2 className="text-2xl font-bold text-slate-800 mb-6">
-            Doanh thu 6 tháng gần nhất
+            Đơn hàng mới nhất
           </h2>
 
-          <div className="h-85 rounded-3xl bg-slate-50 border border-gray-100 flex items-center justify-center">
-            <div className="text-center px-6">
-              <p className="text-lg font-semibold text-slate-700 mb-2">
-                Biểu đồ doanh thu
-              </p>
-              <p className="text-slate-500 text-sm">
-                Tạm thời dùng dữ liệu cứng. Khi có API anh sẽ gắn biểu đồ thật cho em.
-              </p>
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-140 text-left text-sm">
+              <thead className="border-b border-gray-100 text-slate-500">
+                <tr><th className="px-3 py-3">Mã đơn</th><th className="px-3 py-3">Khách hàng</th><th className="px-3 py-3">Tổng tiền</th><th className="px-3 py-3">Trạng thái</th></tr>
+              </thead>
+              <tbody>
+                {recentOrders.slice(0, 5).map((order) => (
+                  <tr key={order.id} className="border-b border-gray-50 last:border-0">
+                    <td className="px-3 py-4 font-semibold text-[#0047AB]">#{order.id}</td>
+                    <td className="px-3 py-4 text-slate-700">{order.customer?.name || order.customer_name || "Khách hàng"}</td>
+                    <td className="px-3 py-4 font-semibold text-slate-800">{formatPrice(order.amount)}</td>
+                    <td className="px-3 py-4 text-slate-600">{order.status === "pending_confirmation" ? "Chờ xác nhận" : order.status || "Chưa xác định"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
         <div className="bg-white rounded-[28px] border border-gray-100 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-slate-800">
-              Câu hỏi cần trả lời
+              Đơn hàng chờ xác nhận
             </h2>
-            <button className="text-[#0B5CFF] font-medium hover:underline">
-              Xem tất cả
-            </button>
+            <span className="text-2xl font-bold text-[#0B5CFF]">{stats.find((item) => item.title === "Đơn hàng chờ xác nhận")?.value || "0"}</span>
           </div>
 
           <div className="text-center py-8 text-slate-500">
-            <p>Chưa có câu hỏi nào cần trả lời</p>
+            <p>Kiểm tra và xác nhận đơn hàng mới của khách hàng.</p>
           </div>
 
           <button className="mt-8 w-full bg-[#0B5CFF] hover:bg-blue-700 text-white py-3.5 rounded-2xl font-semibold transition inline-flex items-center justify-center gap-2">
-            <FiMessageSquare />
-            Trả lời câu hỏi
+            <FiShoppingBag />
+            Xử lý đơn hàng
           </button>
         </div>
       </div>
 
       <div className="bg-white rounded-[28px] border border-gray-100 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-800">Sản phẩm của tôi</h2>
-          <button className="text-[#0B5CFF] font-medium hover:underline">
+            <h2 className="text-2xl font-bold text-slate-800">Đơn hàng gần đây</h2>
+          <button onClick={() => window.location.assign("/admin/orders")} className="text-[#0B5CFF] font-medium hover:underline">
             Xem tất cả
           </button>
         </div>
 
-        {courses.length === 0 ? (
+        {recentOrders.length === 0 ? (
           <div className="text-center py-10 text-slate-500">
-            <p>Bạn chưa có sản phẩm nào</p>
+            <p>Chưa có đơn hàng nào</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-190">
               <thead>
                 <tr className="bg-slate-50 text-slate-600 text-left">
-                  <th className="px-5 py-4 rounded-l-2xl font-semibold">Sản phẩm</th>
-                  <th className="px-5 py-4 font-semibold">Đơn hàng</th>
-                  <th className="px-5 py-4 font-semibold">Giá</th>
-                  <th className="px-5 py-4 font-semibold">Trạng thái</th>
-                  <th className="px-5 py-4 rounded-r-2xl font-semibold">Bài học</th>
+                  <th className="px-5 py-4 rounded-l-2xl font-semibold">Mã đơn</th>
+                  <th className="px-5 py-4 font-semibold">Khách hàng</th>
+                  <th className="px-5 py-4 font-semibold">Sản phẩm</th>
+                  <th className="px-5 py-4 font-semibold">Số lượng</th>
+                  <th className="px-5 py-4 font-semibold">Tổng tiền</th>
+                  <th className="px-5 py-4 rounded-r-2xl font-semibold">Trạng thái</th>
                 </tr>
               </thead>
 
               <tbody>
-                {courses.map((course) => (
-                  <tr key={course.id} className="border-b border-gray-100">
+                {recentOrders.map((order) => (
+                  <tr key={order.id} className="border-b border-gray-100">
                     <td className="px-5 py-5 font-semibold text-slate-800">
-                      {course.title}
+                      #{order.id}
                     </td>
-                    <td className="px-5 py-5 text-slate-700">{course.students}</td>
-                    <td className="px-5 py-5 text-slate-700">{formatPrice(course.price)}</td>
-                    <td className="px-5 py-5">
-                      <span
-                        className={`px-3 py-1 rounded-xl text-sm font-medium ${
-                          course.status === "Đã xuất bản"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700"
-                        }`}
-                      >
-                        {course.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-5 text-slate-700">{course.lessons}</td>
+                    <td className="px-5 py-5 text-slate-700">{order.customer?.name || order.customer_name || "Khách hàng"}</td>
+                    <td className="px-5 py-5 text-slate-700">{order.product?.title || order.product?.name || "Sản phẩm"}</td>
+                    <td className="px-5 py-5 text-slate-700">{formatNumber(order.quantity)}</td>
+                    <td className="px-5 py-5 text-slate-700">{formatPrice(order.amount)}</td>
+                    <td className="px-5 py-5 text-slate-700">{order.status === "pending_confirmation" ? "Chờ xác nhận" : order.status || "Chưa xác định"}</td>
                   </tr>
                 ))}
               </tbody>

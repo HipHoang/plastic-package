@@ -198,7 +198,7 @@ def search():
 # GET ALL PRODUCTS
 # =========================
 @product_bp.route("/", methods=["GET"])
-def get_courses():
+def get_products():
     try:
         page = request.args.get("page", 1, type=int)
         size = min(request.args.get("size", 10, type=int), 50)
@@ -240,7 +240,11 @@ def get_product_detail(product_id):
     try:
         data = get_product_detail_service(product_id)
 
-        if not data:
+        if (
+            not data
+            or not data.get("is_active", True)
+            or not data.get("is_published", True)
+        ):
             return error_response(
                 "Không tìm thấy sản phẩm",
                 404
@@ -290,11 +294,11 @@ def create_product_order():
         user_id = get_jwt_identity()
         data = request.get_json(silent=True) or {}
 
-        product_id = data.get("product_id") or data.get("course_id")
+        product_id = data.get("product_id")
 
         if not product_id:
             return error_response(
-                "Thiếu product_id/course_id",
+                "Thiếu product_id",
                 400
             )
 
@@ -584,14 +588,14 @@ def get_staff_product_stats():
 # =========================
 @product_bp.route("/", methods=["POST", "OPTIONS"])
 @jwt_required()
-def add_course():
+def add_product():
     if request.method == "OPTIONS":
         return "", 200
 
     try:
-        instructor_id = get_jwt_identity()
+        staff_id = get_jwt_identity()
 
-        if not instructor_id:
+        if not staff_id:
             return error_response(
                 "Chưa đăng nhập",
                 401
@@ -605,7 +609,7 @@ def add_course():
         image_file = request.files.get("image")
 
         new_product = ProductService.add_new_product(
-            instructor_id,
+            staff_id,
             data,
             image_file
         )

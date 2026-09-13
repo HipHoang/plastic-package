@@ -27,7 +27,7 @@ class PaymentService:
     @staticmethod
     def create_payment_url(
         user_id,
-        course_id,
+        product_id,
         quantity=1,
         customer_name=None,
         customer_phone=None,
@@ -53,20 +53,20 @@ class PaymentService:
         # 2. KIỂM TRA SẢN PHẨM
         # =========================
         try:
-            course_id = int(course_id)
+            product_id = int(product_id)
         except (TypeError, ValueError):
             raise ValueError(
                 "Mã sản phẩm không hợp lệ"
             )
 
-        course = Product.query.get(course_id)
+        product = Product.query.get(product_id)
 
-        if not course:
+        if not product:
             raise ValueError(
                 "Không tìm thấy sản phẩm"
             )
 
-        if not course.is_active:
+        if not product.is_active:
             raise ValueError(
                 "Sản phẩm hiện đang ngừng bán"
             )
@@ -87,21 +87,21 @@ class PaymentService:
             )
 
         min_quantity = int(
-            course.min_order_quantity or 1
+            product.min_order_quantity or 1
         )
 
         if quantity < min_quantity:
             raise ValueError(
                 f"Số lượng tối thiểu là "
                 f"{min_quantity} "
-                f"{course.unit or 'cái'}"
+                f"{product.unit or 'cái'}"
             )
 
         # =========================
         # 4. TÍNH GIÁ
         # =========================
         unit_price = float(
-            course.price or 0
+            product.price or 0
         )
 
         if unit_price <= 0:
@@ -117,7 +117,7 @@ class PaymentService:
         # =========================
         order_desc = (
             f"Thanh toan san pham "
-            f"{course.title} "
+            f"{product.title} "
             f"- SL {quantity}"
         )
 
@@ -126,7 +126,7 @@ class PaymentService:
         # =========================
         new_order = Order(
             user_id=user_id,
-            course_id=course_id,
+            product_id=product_id,
             amount=amount,
             quantity=quantity,
             status="pending",

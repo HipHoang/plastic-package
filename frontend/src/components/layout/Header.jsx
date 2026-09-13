@@ -239,6 +239,13 @@ const Header = () => {
           >
             Danh mục
           </button>
+
+          <button
+            onClick={() => navigate("/#gioi-thieu")}
+            className="text-sm font-semibold text-gray-700 transition hover:text-[#013396]"
+          >
+            Giới thiệu
+          </button>
         </nav>
 
         {/* SEARCH */}

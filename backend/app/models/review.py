@@ -16,12 +16,11 @@ class Review(db.Model):
         nullable=False
     )
 
-    course_id = db.Column(
+    product_id = db.Column(
         db.Integer,
-        db.ForeignKey("courses.course_id"),
+        db.ForeignKey("products.product_id"),
         nullable=False
     )
-    product_id = db.synonym("course_id")
 
     rating = db.Column(
         db.Integer,
@@ -45,13 +44,13 @@ class Review(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint(
-            "course_id",
+            "product_id",
             "user_id",
             name="unique_user_review"
         ),
     )
 
-    course = db.relationship(
+    product = db.relationship(
         "Product",
         backref="reviews",
         lazy=True
@@ -68,8 +67,7 @@ class Review(db.Model):
             "review_id": self.review_id,
             "id": self.review_id,
             "user_id": self.user_id,
-            "course_id": self.course_id,
-            "product_id": self.course_id,
+            "product_id": self.product_id,
             "rating": self.rating,
             "comment": self.comment,
             "user_name": (

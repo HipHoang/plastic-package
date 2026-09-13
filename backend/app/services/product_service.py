@@ -1,4 +1,4 @@
-from app.models import Product, Enrollment, Review
+from app.models import Product, Enrollment, Review, Order
 from sqlalchemy import asc, desc, func
 from app.configs.db import db
 from app.services.cloudinary_service import upload_image
@@ -45,13 +45,13 @@ class ProductService:
             )
             .outerjoin(
                 Review,
-                Product.course_id == Review.course_id
+                Product.product_id == Review.product_id
             )
             .filter(
                 Product.is_active.is_(True),
                 Product.is_published.is_(True)
             )
-            .group_by(Product.course_id)
+            .group_by(Product.product_id)
         )
 
         if keyword:
@@ -140,17 +140,17 @@ class ProductService:
 
         elif sort_by == "oldest":
             query = query.order_by(
-                asc(Product.course_id)
+                asc(Product.product_id)
             )
 
         else:
             query = query.order_by(
-                desc(Product.course_id)
+                desc(Product.product_id)
             )
 
         total = query.count()
 
-        courses = (
+        products = (
             query
             .offset((page - 1) * size)
             .limit(size)
@@ -159,8 +159,8 @@ class ProductService:
 
         results = []
 
-        for course, avg, count in courses:
-            data = course.to_dict()
+        for product, avg, count in products:
+            data = product.to_dict()
 
             data["avg_rating"] = (
                 round(float(avg), 1)
@@ -189,7 +189,7 @@ class ProductService:
     # =========================
     @staticmethod
     def add_new_product(
-        instructor_id,
+        staff_id,
         data,
         image_file=None
     ):
@@ -214,9 +214,9 @@ class ProductService:
             price_val = 0.0
 
         try:
-            inst_id = int(instructor_id)
+            staff_id = int(staff_id)
         except (ValueError, TypeError):
-            inst_id = None
+            staff_id = None
 
         try:
             min_quantity = int(
@@ -239,7 +239,7 @@ class ProductService:
         except (ValueError, TypeError):
             category_id = None
 
-        new_course = Product(
+        new_product = Product(
             title=data.get("title", ""),
             description=data.get(
                 "description",
@@ -247,7 +247,7 @@ class ProductService:
             ),
             price=price_val,
             image=data.get("image"),
-            instructor_id=inst_id,
+            staff_id=staff_id,
             level=data.get("level", ""),
             category=data.get("category", ""),
             category_id=category_id,
@@ -265,27 +265,27 @@ class ProductService:
             is_published=True,
         )
 
-        db.session.add(new_course)
+        db.session.add(new_product)
         db.session.commit()
 
-        return new_course
+        return new_product
 
     # =========================
     # UPDATE PRODUCT
     # =========================
     @staticmethod
     def update_product(
-        course_id,
+        product_id,
         data,
         image_file=None
     ):
-        course = Product.query.get(course_id)
+        product = Product.query.get(product_id)
 
-        if not course:
+        if not product:
             return None
 
         if image_file:
-            course.image = upload_image(image_file)
+            product.image = upload_image(image_file)
 
         fields = [
             "title",
@@ -306,14 +306,14 @@ class ProductService:
         for field in fields:
             if field in data:
                 setattr(
-                    course,
+                    product,
                     field,
                     data.get(field)
                 )
 
         if "price" in data:
             try:
-                course.price = float(
+                product.price = float(
                     data.get("price")
                 )
             except (ValueError, TypeError):
@@ -321,7 +321,7 @@ class ProductService:
 
         if "min_order_quantity" in data:
             try:
-                course.min_order_quantity = max(
+                product.min_order_quantity = max(
                     int(
                         data.get(
                             "min_order_quantity"
@@ -334,7 +334,7 @@ class ProductService:
 
         if "category_id" in data:
             try:
-                course.category_id = (
+                product.category_id = (
                     int(data.get("category_id"))
                     if data.get("category_id")
                     else None
@@ -346,44 +346,44 @@ class ProductService:
             value = data.get("is_active")
 
             if isinstance(value, str):
-                course.is_active = (
+                product.is_active = (
                     value.lower()
                     in ["true", "1", "yes", "on"]
                 )
             else:
-                course.is_active = bool(value)
+                product.is_active = bool(value)
 
         if "is_published" in data:
             value = data.get("is_published")
 
             if isinstance(value, str):
-                course.is_published = (
+                product.is_published = (
                     value.lower()
                     in ["true", "1", "yes", "on"]
                 )
             else:
-                course.is_published = bool(value)
+                product.is_published = bool(value)
 
         db.session.commit()
 
-        return course
+        return product
 
     # =========================
     # DELETE / DEACTIVATE
     # =========================
     @staticmethod
-    def deactivate_product(course_id):
-        course = Product.query.get(course_id)
+    def deactivate_product(product_id):
+        product = Product.query.get(product_id)
 
-        if not course:
+        if not product:
             return None
 
-        course.is_active = False
-        course.is_published = False
+        product.is_active = False
+        product.is_published = False
 
         db.session.commit()
 
-        return course
+        return product
 
 
 # =========================
@@ -393,7 +393,7 @@ def get_products_service(
     page=1,
     size=10,
     keyword=None,
-    sort="course_id"
+    sort="product_id"
 ):
     return ProductService.search_and_sort_products(
         page=page,
@@ -410,10 +410,10 @@ def get_products_service(
 # =========================
 # PRODUCT DETAIL
 # =========================
-def get_product_detail_service(course_id):
-    course = Product.query.get(course_id)
+def get_product_detail_service(product_id):
+    product = Product.query.get(product_id)
 
-    if not course:
+    if not product:
         return None
 
     avg = (
@@ -421,23 +421,22 @@ def get_product_detail_service(course_id):
             func.avg(Review.rating)
         )
         .filter(
-            Review.course_id == course_id
+            Review.product_id == product_id
         )
         .scalar()
     )
 
     count = (
         Review.query
-        .filter_by(course_id=course_id)
+        .filter_by(product_id=product_id)
         .count()
     )
 
-    data = course.to_dict()
+    data = product.to_dict()
 
     data.update({
-        "course_id": course.course_id,
-        "id": course.course_id,
-        "product_id": course.course_id,
+        "id": product.product_id,
+        "product_id": product.product_id,
         "avg_rating": (
             round(float(avg), 1)
             if avg
@@ -445,11 +444,11 @@ def get_product_detail_service(course_id):
         ),
         "total_reviews": count,
         "manufacturer": "ASIAPP",
-        "instructor": {
-            "id": course.instructor_id,
+        "staff": {
+            "id": product.staff_id,
             "name": (
-                course.instructor.name
-                if course.instructor
+                product.staff.name
+                if product.staff
                 else "ASIAPP"
             ),
         },
@@ -473,24 +472,23 @@ def get_customer_products(user_id):
     result = []
 
     for enroll in enrollments:
-        course = enroll.course
+        product = enroll.product
 
-        if not course:
+        if not product:
             continue
 
         result.append({
-            "id": course.course_id,
-            "course_id": course.course_id,
-            "product_id": course.course_id,
-            "title": course.title,
-            "name": course.title,
-            "description": course.description,
-            "image": course.image,
-            "price": float(course.price or 0),
+            "id": product.product_id,
+            "product_id": product.product_id,
+            "title": product.title,
+            "name": product.title,
+            "description": product.description,
+            "image": product.image,
+            "price": float(product.price or 0),
             "quantity": 1,
-            "unit": course.unit or "cái",
+            "unit": product.unit or "cái",
             "status": enroll.status or "active",
-            "course_status": enroll.status or "active",
+            "order_status": enroll.status or "active",
             "progress_percent": 0,
             "completed_lessons": 0,
             "total_lessons": 0,
@@ -504,13 +502,13 @@ def get_customer_products(user_id):
 # =========================
 def enroll_product_service(
     user_id,
-    course_id
+    product_id
 ):
     existing = (
         Enrollment.query
         .filter_by(
             user_id=user_id,
-            course_id=course_id
+            product_id=product_id
         )
         .first()
     )
@@ -520,16 +518,16 @@ def enroll_product_service(
             "message": "Sản phẩm đã được mua"
         }, 200
 
-    course = Product.query.get(course_id)
+    product = Product.query.get(product_id)
 
-    if not course:
+    if not product:
         return {
             "message": "Không tìm thấy sản phẩm"
         }, 404
 
     new_enroll = Enrollment(
         user_id=user_id,
-        course_id=course_id,
+        product_id=product_id,
         status="active"
     )
 
@@ -543,83 +541,91 @@ def enroll_product_service(
 
 def check_order_status(
     user_id,
-    course_id
+    product_id
 ):
-    enrollment = (
-        Enrollment.query
-        .filter_by(
-            user_id=user_id,
-            course_id=course_id
+    confirmed_statuses = [
+        "paid",
+        "success",
+        "confirmed",
+        "shipping",
+        "delivered",
+        "completed",
+    ]
+
+    return (
+        Order.query
+        .filter(
+            Order.user_id == user_id,
+            Order.product_id == product_id,
+            Order.status.in_(confirmed_statuses),
         )
         .first()
+        is not None
     )
-
-    return enrollment is not None
 
 
 # =========================
 # ADMIN PRODUCT LIST
 # =========================
 def get_admin_products():
-    courses = (
+    products = (
         Product.query
         .order_by(
-            Product.course_id.desc()
+            Product.product_id.desc()
         )
         .all()
     )
 
     result = []
 
-    for course in courses:
+    for product in products:
         order_count = (
             Enrollment.query
             .filter_by(
-                course_id=course.course_id
+                product_id=product.product_id
             )
             .count()
         )
 
         result.append({
-            "id": course.course_id,
-            "course_id": course.course_id,
-            "product_id": course.course_id,
-            "title": course.title,
-            "name": course.title,
-            "description": course.description,
+            "id": product.product_id,
+            "product_id": product.product_id,
+            "title": product.title,
+            "name": product.title,
+            "description": product.description,
             "students": order_count,
             "orders": order_count,
-            "price": float(course.price or 0),
+            "price": float(product.price or 0),
             "status": (
                 "Đang bán"
-                if course.is_active
+                if product.is_active
                 else "Ngừng bán"
             ),
-            "is_active": bool(course.is_active),
-            "is_published": bool(course.is_published),
-            "image": course.image,
-            "category": course.category,
-            "category_id": course.category_id,
-            "material": course.material,
-            "thickness": course.thickness,
-            "width": course.width,
-            "height": course.height,
-            "length": course.length,
-            "color": course.color,
-            "printing": course.printing,
-            "usage": course.usage,
-            "unit": course.unit or "cái",
+            "is_active": bool(product.is_active),
+            "is_published": bool(product.is_published),
+            "image": product.image,
+            "category": product.category,
+            "category_id": product.category_id,
+            "material": product.material,
+            "thickness": product.thickness,
+            "width": product.width,
+            "height": product.height,
+            "length": product.length,
+            "color": product.color,
+            "printing": product.printing,
+            "usage": product.usage,
+            "unit": product.unit or "cái",
             "min_order_quantity": (
-                course.min_order_quantity or 1
+                product.min_order_quantity or 1
             ),
             "created_at": (
-                course.created_at.isoformat()
-                if course.created_at
+                product.created_at.isoformat()
+                if product.created_at
                 else None
             ),
             "updated_at": (
-                course.updated_at.isoformat()
-                if course.updated_at
+                product.updated_at.isoformat()
+                if product.updated_at
                 else None
             ),
         })
@@ -631,46 +637,45 @@ def get_admin_products():
 # LEGACY ADMIN PRODUCT LIST
 # =========================
 def get_staff_products(user_id):
-    courses = (
+    products = (
         Product.query
-        .filter_by(instructor_id=user_id)
+        .filter_by(staff_id=user_id)
         .order_by(
-            Product.course_id.desc()
+            Product.product_id.desc()
         )
         .all()
     )
 
     result = []
 
-    for course in courses:
+    for product in products:
         order_count = (
             Enrollment.query
             .filter_by(
-                course_id=course.course_id
+                product_id=product.product_id
             )
             .count()
         )
 
         result.append({
-            "id": course.course_id,
-            "course_id": course.course_id,
-            "product_id": course.course_id,
-            "title": course.title,
-            "name": course.title,
+            "id": product.product_id,
+            "product_id": product.product_id,
+            "title": product.title,
+            "name": product.title,
             "students": order_count,
             "orders": order_count,
-            "price": float(course.price or 0),
+            "price": float(product.price or 0),
             "status": (
                 "Đang bán"
-                if course.is_active
+                if product.is_active
                 else "Ngừng bán"
             ),
-            "image": course.image,
-            "category": course.category,
-            "material": course.material,
-            "unit": course.unit or "cái",
+            "image": product.image,
+            "category": product.category,
+            "material": product.material,
+            "unit": product.unit or "cái",
             "min_order_quantity": (
-                course.min_order_quantity or 1
+                product.min_order_quantity or 1
             ),
         })
 
@@ -681,24 +686,24 @@ def get_staff_products(user_id):
 # ADMIN STATISTICS
 # =========================
 def get_staff_stats(user_id):
-    courses = (
+    products = (
         Product.query
-        .filter_by(instructor_id=user_id)
+        .filter_by(staff_id=user_id)
         .all()
     )
 
-    total_courses = len(courses)
+    total_products = len(products)
 
     total_students = 0
     total_revenue = 0
     total_rating = 0
     rated_courses = 0
 
-    for course in courses:
+    for product in products:
         student_count = (
             Enrollment.query
             .filter_by(
-                course_id=course.course_id
+                product_id=product.product_id
             )
             .count()
         )
@@ -706,7 +711,7 @@ def get_staff_stats(user_id):
         total_students += student_count
 
         total_revenue += (
-            (course.price or 0)
+            (product.price or 0)
             * student_count
         )
 
@@ -715,8 +720,8 @@ def get_staff_stats(user_id):
                 func.avg(Review.rating)
             )
             .filter(
-                Review.course_id
-                == course.course_id
+                Review.product_id
+                == product.product_id
             )
             .scalar()
         )
@@ -735,8 +740,7 @@ def get_staff_stats(user_id):
     )
 
     return {
-        "total_courses": total_courses,
-        "total_products": total_courses,
+        "total_products": total_products,
         "total_students": total_students,
         "total_orders": total_students,
         "total_revenue": total_revenue,

@@ -62,6 +62,7 @@ export default function AIChat() {
         senderId: userId || "guest",
         role: userRole,
         text: text,
+        createdAt: new Date(),
       });
     } catch (err) {
       console.error("Firestore save error:", err);
@@ -105,13 +106,25 @@ export default function AIChat() {
     }
   };
 
-  const formatTime = (date) => {
-    if (!date) return "";
-    const d = new Date(date);
-    return d.toLocaleTimeString("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const formatTime = (timestamp) => {
+    if (!timestamp) return "";
+    try {
+      let date;
+      if (typeof timestamp.toDate === "function") {
+        date = timestamp.toDate();
+      } else if (timestamp.seconds) {
+        date = new Date(timestamp.seconds * 1000);
+      } else {
+        date = new Date(timestamp);
+      }
+      if (Number.isNaN(date.getTime())) return "";
+      return date.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
   };
 
 

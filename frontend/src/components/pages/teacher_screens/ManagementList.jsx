@@ -38,14 +38,15 @@ const ManagementList = ({ resource }) => {
         <p className="mt-4 text-red-600">{error}</p>
       )}
       <div className="mt-6 overflow-x-auto rounded-xl bg-white shadow">
-        <table className="min-w-full text-left text-sm">
+        <table className="min-w-180 w-full text-left text-sm">
           <thead className="bg-slate-50">
             <tr>
               <th className="px-4 py-3">ID</th>
-              <th className="px-4 py-3">
-                {isCustomers ? "Tên / Email" : "Tên danh mục"}
-              </th>
+              <th className="px-4 py-3">{isCustomers ? "Khách hàng" : "Danh mục"}</th>
+              {isCustomers && <th className="px-4 py-3">Số điện thoại</th>}
+              {isCustomers && <th className="px-4 py-3">Vai trò</th>}
               <th className="px-4 py-3">Trạng thái</th>
+              {isCustomers && <th className="px-4 py-3">Ngày đăng ký</th>}
             </tr>
           </thead>
           <tbody>
@@ -65,14 +66,17 @@ const ManagementList = ({ resource }) => {
                 </td>
                 <td className="px-4 py-3">
                   {isCustomers
-                    ? item.name || item.email
-                    : item.name}
+                    ? <div><p className="font-medium text-slate-800">{item.name || "Chưa cập nhật"}</p><p className="text-xs text-slate-500">{item.email || "Chưa có email"}</p></div>
+                    : <div><p className="font-medium text-slate-800">{item.name}</p><p className="text-xs text-slate-500">{item.description || ""}</p></div>}
                 </td>
+                {isCustomers && <td className="px-4 py-3">{item.phone || "-"}</td>}
+                {isCustomers && <td className="px-4 py-3">{item.role === "admin" || item.role === "ADMIN" ? "Quản trị viên" : item.role === "staff" || item.role === "STAFF" ? "Nhân viên" : "Khách hàng"}</td>}
                 <td className="px-4 py-3">
                   {item.is_active === false
                     ? "Không hoạt động"
                     : "Hoạt động"}
                 </td>
+                {isCustomers && <td className="px-4 py-3">{item.created_at ? new Date(item.created_at).toLocaleDateString("vi-VN") : "-"}</td>}
               </tr>
             ))}
           </tbody>

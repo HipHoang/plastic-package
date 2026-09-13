@@ -110,7 +110,7 @@ const AdminSidebar = ({ isExpanded, setIsExpanded }) => {
             </div>
 
             {isExpanded && (
-              <span className="whitespace-nowrap text-sm font-medium overflow-hidden">
+              <span className="max-md:hidden whitespace-nowrap text-sm font-medium overflow-hidden">
                 {item.name}
               </span>
             )}

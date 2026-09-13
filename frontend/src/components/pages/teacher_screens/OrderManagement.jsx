@@ -63,10 +63,7 @@ function getProductName(order) {
   return (
     order?.product?.name ||
     order?.product?.title ||
-    order?.course?.name ||
-    order?.course?.title ||
     order?.product_name ||
-    order?.course_title ||
     "Sản phẩm"
   );
 }
@@ -301,13 +298,13 @@ export default function OrderManagement() {
         )}
 
         {loading ? (
-          <div className="flex min-h-[300px] items-center justify-center rounded-xl bg-white shadow-sm">
+          <div className="flex min-h-75 items-center justify-center rounded-xl bg-white shadow-sm">
             <div className="text-sm text-gray-500">
               Đang tải danh sách đơn hàng...
             </div>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl bg-white px-6 text-center shadow-sm">
+          <div className="flex min-h-75 flex-col items-center justify-center rounded-xl bg-white px-6 text-center shadow-sm">
             <div className="mb-3 rounded-full bg-gray-100 p-4 text-gray-400">
               <FiShoppingBag size={28} />
             </div>
@@ -347,7 +344,7 @@ export default function OrderManagement() {
                       </div>
 
                       <span
-                        className={`inline-flex max-w-[130px] rounded-full px-3 py-1 text-center text-xs font-medium ${
+                        className={`inline-flex max-w-32.5 rounded-full px-3 py-1 text-center text-xs font-medium ${
                           statusClasses[status] ||
                           "bg-gray-100 text-gray-600"
                         }`}
