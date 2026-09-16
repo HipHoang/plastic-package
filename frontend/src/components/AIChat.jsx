@@ -15,7 +15,7 @@ export default function AIChat() {
   const user = getCurrentUser();
   const userId = getCurrentUserId();
   const conversationId = userId ? `ai-chat-${userId}` : "ai-chat-guest";
-  const userRole = user?.role === "GiangVien" || user?.role === "GV" ? "teacher" : "student";
+  const userRole = user?.role === "admin" || user?.role === "staff" ? "admin" : "customer";
 
   // Subscribe to Firestore realtime messages (single source of truth)
   useEffect(() => {

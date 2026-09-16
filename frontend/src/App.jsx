@@ -10,15 +10,15 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import Layout from "./components/layout/Layout";
 
 import Home from "./components/pages/Home";
-import Products from "./components/pages/student_screens/Products";
-import ProductDetail from "./components/pages/student_screens/ProductDetail";
-import OrderHistory from "./components/pages/student_screens/OrderHistory";
-import OrderDetail from "./components/pages/student_screens/OrderDetail";
-import PaymentSuccess from "./components/pages/student_screens/PaymentSuccess";
-import PaymentFailed from "./components/pages/student_screens/PaymentFailed";
+import Products from "./components/pages/customer_screens/Products";
+import ProductDetail from "./components/pages/customer_screens/ProductDetail";
+import OrderHistory from "./components/pages/customer_screens/OrderHistory";
+import OrderDetail from "./components/pages/customer_screens/OrderDetail";
+import PaymentSuccess from "./components/pages/customer_screens/PaymentSuccess";
+import PaymentFailed from "./components/pages/customer_screens/PaymentFailed";
 
-import OrderManagement from "./components/pages/teacher_screens/OrderManagement";
-import AdminDashboard from "./components/pages/teacher_screens/AdminDashboard";
+import OrderManagement from "./components/pages/admin_screens/OrderManagement";
+import AdminDashboard from "./components/pages/admin_screens/AdminDashboard";
 import { useAuth } from "./context/AuthProvider";
 import { getStoredAuth, isAdminRole, isStaffRole } from "./untils/auth";
 
@@ -35,12 +35,12 @@ const AdminRoute = ({ children }) => {
 
   return isAdmin ? children : <Navigate to="/" replace />;
 };
-import AdminProfile from "./components/pages/teacher_screens/AdminProfile";
-import OrderDetailAdmin from "./components/pages/teacher_screens/OrderDetailAdmin";
-import ProductManagement from "./components/pages/teacher_screens/ProductManagement";
-import ManagementList from "./components/pages/teacher_screens/ManagementList";
-import AdminNews from "./components/pages/teacher_screens/AdminNews";
-import AdminReviews from "./components/pages/teacher_screens/AdminReviews";
+import AdminProfile from "./components/pages/admin_screens/AdminProfile";
+import OrderDetailAdmin from "./components/pages/admin_screens/OrderDetailAdmin";
+import ProductManagement from "./components/pages/admin_screens/ProductManagement";
+import ManagementList from "./components/pages/admin_screens/ManagementList";
+import AdminNews from "./components/pages/admin_screens/AdminNews";
+import AdminReviews from "./components/pages/admin_screens/AdminReviews";
 
 import CustomerAI from "./components/pages/CustomerAI";
 import AIChat from "./components/AIChat";
@@ -61,16 +61,6 @@ function App() {
             <Route path="/products" element={<Products />} />
 
             <Route path="/products/:id" element={<ProductDetail />} />
-
-            <Route
-              path="/all-courses"
-              element={<Navigate to="/products" replace />}
-            />
-
-            <Route
-              path="/courses/:id"
-              element={<Navigate to="/products/:id" replace />}
-            />
 
             {/* =========================
                 CUSTOMER ORDERS

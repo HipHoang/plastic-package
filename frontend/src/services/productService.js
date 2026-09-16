@@ -220,10 +220,6 @@ export const productService = {
         product.level ||
         "Tiêu chuẩn",
 
-      totalDuration:
-        product.total_duration ||
-        "Liên hệ",
-
       totalSpecifications: 0,
 
       introVideoThumbnail:

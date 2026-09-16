@@ -477,7 +477,7 @@ const UserHome = ({ currentUser, products, loading }) => {
   );
 };
 
-const HomeStudent = () => {
+const Home = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -527,4 +527,4 @@ const HomeStudent = () => {
   );
 };
 
-export default HomeStudent;
+export default Home;

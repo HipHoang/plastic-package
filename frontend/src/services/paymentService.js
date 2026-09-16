@@ -188,7 +188,7 @@ export const paymentService = {
   // =========================
   // KIỂM TRA ĐÃ MUA
   // =========================
-  async hasPaidCourse(productId) {
+  async hasPurchasedProduct(productId) {
     try {
       const response = await apiClient.get(
         `/products/${productId}/check-order`
@@ -206,14 +206,5 @@ export const paymentService = {
 
       return false;
     }
-  },
-
-  // =========================
-  // ALIAS
-  // =========================
-  async hasPurchasedProduct(productId) {
-    return this.hasPaidCourse(
-      productId
-    );
   },
 };

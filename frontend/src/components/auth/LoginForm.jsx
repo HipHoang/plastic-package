@@ -9,7 +9,7 @@ import {
 
 import {
   setStoredAuth,
-  isTeacherRole,
+  isAdminOrStaffRole,
 } from "../../untils/auth";
 
 import { useAuth } from "../../context/AuthProvider";
@@ -109,7 +109,7 @@ const LoginForm = ({ onSwitchType }) => {
      * luôn vào trang quản trị.
      */
     if (
-      isTeacherRole(data.user?.role)
+      isAdminOrStaffRole(data.user?.role)
     ) {
       window.location.href =
         "/admin/dashboard";

@@ -8,7 +8,7 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { productService } from "../../../services/productService";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;
 const CATEGORY_OPTIONS = [
   { id: "1", label: "Túi PE" },
   { id: "2", label: "Túi PP" },

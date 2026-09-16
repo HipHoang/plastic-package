@@ -72,8 +72,8 @@ export const isStaffRole = (role) => {
   );
 };
 
-export const isTeacherRole = (role) => {
-  return isStaffRole(role);
+export const isAdminOrStaffRole = (role) => {
+  return isAdminRole(role) || isStaffRole(role);
 };
 
 export const isCustomerRole = (role) => {

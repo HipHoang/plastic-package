@@ -184,9 +184,6 @@ class ProductService:
             "results": results,
         }
 
-    # =========================
-    # CREATE PRODUCT
-    # =========================
     @staticmethod
     def add_new_product(
         staff_id,
@@ -270,9 +267,6 @@ class ProductService:
 
         return new_product
 
-    # =========================
-    # UPDATE PRODUCT
-    # =========================
     @staticmethod
     def update_product(
         product_id,
